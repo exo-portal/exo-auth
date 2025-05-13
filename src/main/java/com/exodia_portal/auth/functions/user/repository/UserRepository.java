@@ -16,4 +16,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return an Optional containing the user if found and not deleted, or empty if not found or deleted
      */
     Optional<User> findByLoginAndIsDeletedFalse(String login);
+
+    /**
+     * Find a user by their ID and check if they are not deleted.
+     *
+     * @param id the ID of the user
+     * @return an Optional containing the user if found and not deleted, or empty if not found or deleted
+     */
+    Optional<User> findByIdAndIsDeletedFalse(long id);
+
+    /**
+     * Find a user by their email and check if they are not deleted.
+     *
+     * @param email the email of the user
+     * @return an Optional containing the user if found and not deleted, or empty if not found or deleted
+     */
+    Optional<User> findByEmailAndIsDeletedFalse(String email);
 }

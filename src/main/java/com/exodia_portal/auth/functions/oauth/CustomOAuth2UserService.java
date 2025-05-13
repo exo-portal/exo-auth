@@ -14,6 +14,8 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class CustomOAuth2UserService implements OAuth2UserService {
@@ -46,23 +48,29 @@ public class CustomOAuth2UserService implements OAuth2UserService {
     /**
      * Authenticates a user using Google OAuth2.
      *
-     * @param oAuth2User The OAuth2 user object containing user information.
+     * @param oAuth2User   The OAuth2 user object containing user information.
      * @param providerName The name of the provider (e.g., "google").
      * @return An OAuth2User object with the user's information.
      */
     private OAuth2User githubAuthenticate(OAuth2User oAuth2User, String providerName) {
+        Map<String, Object> attributes = oAuth2User.getAttributes();
+
         String providerId = oAuth2User.getName();
         String email = oAuth2User.getAttribute("email");
         String fullName = oAuth2User.getAttribute("name");
         String avatarUrl = oAuth2User.getAttribute("avatar_url");
         String login = oAuth2User.getAttribute("login");
 
+        User user = saveLoadUser(providerId, providerName, login, email, fullName, avatarUrl);
 
-        saveLoadUser(providerId, providerName, login, email, fullName, avatarUrl);
+        // Store your DB ID in attributes for later retrieval
+        attributes = new HashMap<>(attributes);
+        attributes.put("authId", user.getId());
+        attributes.put("email",  user.getEmail());
 
         return new DefaultOAuth2User(
                 Collections.singleton(() -> "ROLE_USER"),
-                oAuth2User.getAttributes(),
+                attributes,
                 "name"
         );
     }
@@ -70,43 +78,50 @@ public class CustomOAuth2UserService implements OAuth2UserService {
     /**
      * Authenticates a user using Google OAuth2.
      *
-     * @param oAuth2User The OAuth2 user object containing user information.
+     * @param oAuth2User   The OAuth2 user object containing user information.
      * @param providerName The name of the provider (e.g., "google").
      * @return An OAuth2User object with the user's information.
      */
     private OAuth2User googleAuthenticate(OAuth2User oAuth2User, String providerName) {
+        Map<String, Object> attributes = oAuth2User.getAttributes();
+        
         String providerId = oAuth2User.getName();
         String email = oAuth2User.getAttribute("email");
         String fullName = oAuth2User.getAttribute("name");
         String avatarUrl = oAuth2User.getAttribute("picture");
         String login = email.split("@")[0];
 
-        saveLoadUser(providerId, providerName, login, email, fullName, avatarUrl);
+        User user = saveLoadUser(providerId, providerName, login, email, fullName, avatarUrl);
+
+        // Store your DB ID in attributes for later retrieval
+        attributes = new HashMap<>(attributes);
+        attributes.put("authId", user.getId());
+        attributes.put("email",  user.getEmail());
 
         return new DefaultOAuth2User(
                 Collections.singleton(() -> "ROLE_USER"),
-                oAuth2User.getAttributes(),
+                attributes,
                 "name"
         );
     }
 
     /**
      * Saves or loads a user and their associated login method in the database.
-     *
+     * <p>
      * This method checks if a user with the given login exists and is not marked as deleted.
      * If the user does not exist, it creates a new user and saves it to the database.
      * It also checks if a login method associated with the given provider ID and provider name exists for the user.
      * If the login method does not exist, it creates a new one and saves it to the database.
      * If the login method is marked as deleted, it reactivates it by setting the deleted flag to false.
      *
-     * @param providerId The unique identifier for the provider (e.g., GitHub, Google).
+     * @param providerId   The unique identifier for the provider (e.g., GitHub, Google).
      * @param providerName The name of the provider (e.g., "github", "google").
-     * @param login The login username or identifier for the user.
-     * @param email The email address of the user.
-     * @param fullName The full name of the user.
-     * @param avatarUrl The URL of the user's avatar or profile picture.
+     * @param login        The login username or identifier for the user.
+     * @param email        The email address of the user.
+     * @param fullName     The full name of the user.
+     * @param avatarUrl    The URL of the user's avatar or profile picture.
      */
-    private void saveLoadUser(String providerId, String providerName, String login, String email, String fullName, String avatarUrl) {
+    private User saveLoadUser(String providerId, String providerName, String login, String email, String fullName, String avatarUrl) {
         User user = userRepository.findByLoginAndIsDeletedFalse(login)
                 .orElseGet(() -> {
                     User newUser = User.builder()
@@ -134,5 +149,6 @@ public class CustomOAuth2UserService implements OAuth2UserService {
             loginMethod.setDeleted(false);
             loginMethodRepository.save(loginMethod);
         }
+        return user;
     }
 }
