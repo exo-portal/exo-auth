@@ -1,5 +1,6 @@
 package com.exodia_portal.auth.functions.user.service.impl;
 
+import com.exodia_portal.auth.filter.JwtAuthenticationToken;
 import com.exodia_portal.auth.functions.user.dto.UserResponseDto;
 import com.exodia_portal.auth.functions.user.helper.UserHelper;
 import com.exodia_portal.auth.functions.user.repository.UserRepository;
@@ -30,22 +31,31 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponseDto getLoggedInUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof OAuth2User oAuth2User) {
-            User user;
-            Long id = (Long) oAuth2User.getAttribute("authId");
-            String email = (String) oAuth2User.getAttribute("email");
-            if (id != null) {
+
+        if (authentication != null) {
+            if (authentication instanceof JwtAuthenticationToken jwtToken) {
+                String userId = (String) jwtToken.getPrincipal();
                 enableIsDeletedFilter();
-                user = userRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new RuntimeException("User not found"));
+                User user = userRepository.findByIdAndIsDeletedFalse(Long.parseLong(userId))
+                        .orElseThrow(() -> new RuntimeException("User not found"));
                 return UserHelper.response(user);
-            } else if (email != null) {
-                enableIsDeletedFilter();
-                user = userRepository.findByEmailAndIsDeletedFalse(email).orElseThrow(() -> new RuntimeException("User not found"));
-                return UserHelper.response(user);
+            } else if (authentication.getPrincipal() instanceof OAuth2User oAuth2User) {
+                User user;
+                Long id = (Long) oAuth2User.getAttribute("authId");
+                String email = (String) oAuth2User.getAttribute("email");
+                if (id != null) {
+                    enableIsDeletedFilter();
+                    user = userRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new RuntimeException("User not found"));
+                    return UserHelper.response(user);
+                } else if (email != null) {
+                    enableIsDeletedFilter();
+                    user = userRepository.findByEmailAndIsDeletedFalse(email).orElseThrow(() -> new RuntimeException("User not found"));
+                    return UserHelper.response(user);
+                }
+            } else if (authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.User userDetails) {
+                // Handle email/password login
+                return null;
             }
-        } else if (authentication != null && authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.User userDetails) {
-            // Handle email/password login
-            return null;
         }
 
         return null;
