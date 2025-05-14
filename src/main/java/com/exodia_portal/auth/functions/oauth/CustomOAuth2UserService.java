@@ -4,7 +4,10 @@ import com.exodia_portal.auth.functions.loginmethod.repository.LoginMethodReposi
 import com.exodia_portal.auth.functions.user.repository.UserRepository;
 import com.exodia_portal.common.model.LoginMethod;
 import com.exodia_portal.common.model.User;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
@@ -13,7 +16,9 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import java.security.Key;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +30,12 @@ public class CustomOAuth2UserService implements OAuth2UserService {
 
     @Autowired
     private LoginMethodRepository loginMethodRepository;
+
+    @Value("${jwt.secret}")
+    private String secretKey;
+
+    @Value("${jwt.access.expiration}")
+    private long accessTokenExpiration;
 
     /**
      * Loads the user information from the OAuth2 provider.
@@ -61,12 +72,17 @@ public class CustomOAuth2UserService implements OAuth2UserService {
         String avatarUrl = oAuth2User.getAttribute("avatar_url");
         String login = oAuth2User.getAttribute("login");
 
+        // Check if the email is null, if so, set it to the login name
         User user = saveLoadUser(providerId, providerName, login, email, fullName, avatarUrl);
+
+        // Generate JWT token
+        String jwtToken = generateToken(user.getId());
 
         // Store your DB ID in attributes for later retrieval
         attributes = new HashMap<>(attributes);
         attributes.put("authId", user.getId());
         attributes.put("email",  user.getEmail());
+        attributes.put("jwtToken", jwtToken);
 
         return new DefaultOAuth2User(
                 Collections.singleton(() -> "ROLE_USER"),
@@ -93,16 +109,37 @@ public class CustomOAuth2UserService implements OAuth2UserService {
 
         User user = saveLoadUser(providerId, providerName, login, email, fullName, avatarUrl);
 
+        // Generate JWT token
+        String jwtToken = generateToken(user.getId());
+
         // Store your DB ID in attributes for later retrieval
         attributes = new HashMap<>(attributes);
         attributes.put("authId", user.getId());
         attributes.put("email",  user.getEmail());
+        attributes.put("jwtToken", jwtToken);
 
         return new DefaultOAuth2User(
                 Collections.singleton(() -> "ROLE_USER"),
                 attributes,
                 "name"
         );
+    }
+
+    /**
+     * Generates a JWT token for the user.
+     *
+     * @param id The ID of the user.
+     * @return The generated JWT token.
+     */
+    private String generateToken(long id) {
+        Key key = new javax.crypto.spec.SecretKeySpec(secretKey.getBytes(), SignatureAlgorithm.HS256.getJcaName());
+
+        return Jwts.builder()
+                .setSubject(String.valueOf(id))
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
     }
 
     /**
