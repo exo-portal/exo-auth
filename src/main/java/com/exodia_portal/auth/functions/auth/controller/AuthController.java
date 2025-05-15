@@ -2,7 +2,9 @@ package com.exodia_portal.auth.functions.auth.controller;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -32,7 +34,38 @@ public class AuthController {
     @Value("${jwt.refresh.expiration}")
     private long refreshTokenExpiration;
 
+    /**
+     * Handles user logout by invalidating the session and clearing the JWT cookie.
+     *
+     * @param request  the HttpServletRequest object
+     * @param response the HttpServletResponse object
+     * @return a ResponseEntity with a success message
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(HttpServletRequest request, HttpServletResponse response) {
+        // Clear the JWT cookie
+        Cookie jwtCookie = new Cookie("tkn", null);
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(true);
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(0); // Expire the cookie immediately
+        response.addCookie(jwtCookie);
 
+        // Invalidate the session
+        request.getSession().invalidate();
+        SecurityContextHolder.clearContext();
+
+        // Response message
+        Map<String, String> responseBody = new HashMap<>();
+        responseBody.put("message", "Logged out successfully");
+        return ResponseEntity.ok(responseBody);
+    }
+
+    /**
+     * Handles user login by generating access and refresh tokens.
+     *
+     * @return a ResponseEntity with the generated tokens
+     */
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -51,6 +84,12 @@ public class AuthController {
         return ResponseEntity.status(401).body(null);
     }
 
+    /**
+     * Refreshes the access token using the refresh token.
+     *
+     * @param request the request body containing the refresh token
+     * @return a ResponseEntity with the new access token
+     */
     @PostMapping("/refresh-token")
     public ResponseEntity<Map<String, String>> refreshToken(@RequestBody Map<String, String> request) {
         String refreshToken = request.get("refreshToken");
@@ -72,6 +111,31 @@ public class AuthController {
         }
     }
 
+    /**
+     * Retrieves the security token from the request cookies.
+     *
+     * @param request the HttpServletRequest object
+     * @return a ResponseEntity with the token or an error message
+     */
+    @GetMapping("/get-security-token")
+    public ResponseEntity<String> getToken(HttpServletRequest request) {
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("tkn".equals(cookie.getName())) {
+                    return ResponseEntity.ok(cookie.getValue());
+                }
+            }
+        }
+        return ResponseEntity.status(404).body("Token not found");
+    }
+
+    /**
+     * Generates a JWT token with the specified subject and expiration time.
+     *
+     * @param subject    the subject of the token
+     * @param expiration the expiration time in milliseconds
+     * @return the generated JWT token
+     */
     private String generateToken(String subject, long expiration) {
         Key key = new javax.crypto.spec.SecretKeySpec(secretKey.getBytes(), SignatureAlgorithm.HS256.getJcaName());
         return Jwts.builder()

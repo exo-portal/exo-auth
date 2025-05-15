@@ -1,5 +1,6 @@
 package com.exodia_portal.auth.config;
 
+import com.exodia_portal.auth.filter.CustomAuthenticationEntryPoint;
 import com.exodia_portal.auth.filter.JwtAuthenticationFilter;
 import com.exodia_portal.auth.functions.oauth.CustomOAuth2UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,21 +44,25 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/auth/**", "/auth/authentication/verify-session", "/auth/authentication/logout", "/auth/authentication/get-security-token").permitAll()
                         .anyRequest().authenticated()
+
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .exceptionHandling(exceptionHandling ->
+                        exceptionHandling.authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                )
                 .oauth2Login(oauth -> oauth
-                                .userInfoEndpoint(userInfo -> userInfo
-                                        .userService(customOAuth2UserService)
-                                ).successHandler((request, response, authentication) -> {
-                                    OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-                                    String jwtToken = (String) oAuth2User.getAttribute("jwtToken");
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        ).successHandler((request, response, authentication) -> {
+                            OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+                            String jwtToken = (String) oAuth2User.getAttribute("jwtToken");
 
-                                    response.addHeader("Set-Cookie", "tkn=" + jwtToken + "; HttpOnly; Path=/; Secure; SameSite=Strict");
-                                    response.sendRedirect("http://localhost:3000/en/home");
-                                })
+                            response.addHeader("Set-Cookie", "tkn=" + jwtToken + "; HttpOnly; Path=/; Secure; SameSite=Strict");
+                            response.sendRedirect("http://localhost:3000/en/home");
+                        })
                 );
         return http.build();
     }

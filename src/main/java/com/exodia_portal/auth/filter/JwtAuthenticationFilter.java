@@ -22,6 +22,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Value("${jwt.secret}")
     private String secretKey;
 
+    /**
+     * This method is called for each request to check if a JWT token is present in the cookies.
+     * If a valid token is found, it sets the authentication in the SecurityContext.
+     *
+     * @param request     the HttpServletRequest object
+     * @param response    the HttpServletResponse object
+     * @param filterChain the FilterChain object
+     * @throws ServletException if a servlet error occurs
+     * @throws IOException      if an I/O error occurs
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
