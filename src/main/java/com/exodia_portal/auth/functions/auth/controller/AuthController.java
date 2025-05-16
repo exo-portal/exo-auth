@@ -129,6 +129,7 @@ public class AuthController {
         return ResponseEntity.status(404).body("Token not found");
     }
 
+    // TODO:: remove this method or move this in the jwt service
     /**
      * Generates a JWT token with the specified subject and expiration time.
      *
@@ -138,6 +139,7 @@ public class AuthController {
      */
     private String generateToken(String subject, long expiration) {
         Key key = new javax.crypto.spec.SecretKeySpec(secretKey.getBytes(), SignatureAlgorithm.HS256.getJcaName());
+
         return Jwts.builder()
                 .setSubject(subject)
                 .setIssuedAt(new Date())

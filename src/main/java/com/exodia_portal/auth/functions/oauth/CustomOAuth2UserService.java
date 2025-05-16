@@ -1,5 +1,6 @@
 package com.exodia_portal.auth.functions.oauth;
 
+import com.exodia_portal.auth.filter.JwtAuthenticationToken;
 import com.exodia_portal.auth.functions.loginmethod.repository.LoginMethodRepository;
 import com.exodia_portal.auth.functions.user.repository.UserRepository;
 import com.exodia_portal.common.model.LoginMethod;
@@ -8,6 +9,8 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
@@ -15,6 +18,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import java.security.Key;
 import java.util.Collections;
@@ -48,10 +52,24 @@ public class CustomOAuth2UserService implements OAuth2UserService {
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = new DefaultOAuth2UserService().loadUser(userRequest);
         String providerName = userRequest.getClientRegistration().getRegistrationId();
+        User user = null;
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null &&
+                authentication.isAuthenticated()) {
+            if (authentication instanceof JwtAuthenticationToken jwtToken) {
+                String userId = (String) jwtToken.getPrincipal();
+                user = userRepository.findByIdAndIsDeletedFalse(Long.parseLong(userId))
+                        .orElseThrow(() -> new RuntimeException("User not found"));
+            } else if (authentication.getPrincipal() instanceof OAuth2User auth2User) {
+                Long id = auth2User.getAttribute("authId");
+                user = userRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new RuntimeException("User not found"));
+            }
+        }
 
         return switch (providerName) {
-            case "google" -> googleAuthenticate(oAuth2User, providerName);
-            case "github" -> githubAuthenticate(oAuth2User, providerName);
+            case "google" -> googleAuthenticate(oAuth2User, providerName, user);
+            case "github" -> githubAuthenticate(oAuth2User, providerName, user);
             default -> throw new OAuth2AuthenticationException("Unsupported provider: " + providerName);
         };
     }
@@ -63,7 +81,9 @@ public class CustomOAuth2UserService implements OAuth2UserService {
      * @param providerName The name of the provider (e.g., "google").
      * @return An OAuth2User object with the user's information.
      */
-    private OAuth2User githubAuthenticate(OAuth2User oAuth2User, String providerName) {
+    private OAuth2User githubAuthenticate(OAuth2User oAuth2User,
+                                          String providerName,
+                                          User user) {
         Map<String, Object> attributes = oAuth2User.getAttributes();
 
         String providerId = oAuth2User.getName();
@@ -73,7 +93,7 @@ public class CustomOAuth2UserService implements OAuth2UserService {
         String login = oAuth2User.getAttribute("login");
 
         // Check if the email is null, if so, set it to the login name
-        User user = saveLoadUser(providerId, providerName, login, email, fullName, avatarUrl);
+        user = saveLoadUser(user, providerId, providerName, login, email, fullName, avatarUrl);
 
         // Generate JWT token
         String jwtToken = generateToken(user.getId());
@@ -81,7 +101,7 @@ public class CustomOAuth2UserService implements OAuth2UserService {
         // Store your DB ID in attributes for later retrieval
         attributes = new HashMap<>(attributes);
         attributes.put("authId", user.getId());
-        attributes.put("email",  user.getEmail());
+        attributes.put("email", user.getEmail());
         attributes.put("jwtToken", jwtToken);
 
         return new DefaultOAuth2User(
@@ -98,16 +118,18 @@ public class CustomOAuth2UserService implements OAuth2UserService {
      * @param providerName The name of the provider (e.g., "google").
      * @return An OAuth2User object with the user's information.
      */
-    private OAuth2User googleAuthenticate(OAuth2User oAuth2User, String providerName) {
+    private OAuth2User googleAuthenticate(OAuth2User oAuth2User,
+                                          String providerName,
+                                          User user) {
         Map<String, Object> attributes = oAuth2User.getAttributes();
-        
+
         String providerId = oAuth2User.getName();
         String email = oAuth2User.getAttribute("email");
         String fullName = oAuth2User.getAttribute("name");
         String avatarUrl = oAuth2User.getAttribute("picture");
         String login = email.split("@")[0];
 
-        User user = saveLoadUser(providerId, providerName, login, email, fullName, avatarUrl);
+        user = saveLoadUser(user, providerId, providerName, login, email, fullName, avatarUrl);
 
         // Generate JWT token
         String jwtToken = generateToken(user.getId());
@@ -115,7 +137,7 @@ public class CustomOAuth2UserService implements OAuth2UserService {
         // Store your DB ID in attributes for later retrieval
         attributes = new HashMap<>(attributes);
         attributes.put("authId", user.getId());
-        attributes.put("email",  user.getEmail());
+        attributes.put("email", user.getEmail());
         attributes.put("jwtToken", jwtToken);
 
         return new DefaultOAuth2User(
@@ -124,6 +146,8 @@ public class CustomOAuth2UserService implements OAuth2UserService {
                 "name"
         );
     }
+
+    // TODO: remove this method
 
     /**
      * Generates a JWT token for the user.
@@ -158,18 +182,28 @@ public class CustomOAuth2UserService implements OAuth2UserService {
      * @param fullName     The full name of the user.
      * @param avatarUrl    The URL of the user's avatar or profile picture.
      */
-    private User saveLoadUser(String providerId, String providerName, String login, String email, String fullName, String avatarUrl) {
-        User user = userRepository.findByLoginAndIsDeletedFalse(login)
-                .orElseGet(() -> {
-                    User newUser = User.builder()
-                            .email(email)
-                            .fullName(fullName)
-                            .avatarUrl(avatarUrl)
-                            .login(login)
-                            .build();
-                    return userRepository.save(newUser);
-                });
+    private User saveLoadUser(User user,
+                              String providerId,
+                              String providerName,
+                              String login,
+                              String email,
+                              String fullName,
+                              String avatarUrl) {
 
+        if (ObjectUtils.isEmpty(user)) {
+            user = userRepository.findByLoginAndIsDeletedFalse(login)
+                    .orElseGet(() -> {
+                        User newUser = User.builder()
+                                .email(email)
+                                .fullName(fullName)
+                                .avatarUrl(avatarUrl)
+                                .login(login)
+                                .build();
+                        return userRepository.save(newUser);
+                    });
+        }
+
+        User finalUser = user;
         LoginMethod loginMethod = loginMethodRepository.findByProviderIdAndProviderNameAndUserId(
                 providerId,
                 providerName,
@@ -177,7 +211,7 @@ public class CustomOAuth2UserService implements OAuth2UserService {
             LoginMethod newLoginMethod = LoginMethod.builder()
                     .providerId(providerId)
                     .providerName(providerName)
-                    .user(user)
+                    .user(finalUser)
                     .build();
             return loginMethodRepository.save(newLoginMethod);
         });
