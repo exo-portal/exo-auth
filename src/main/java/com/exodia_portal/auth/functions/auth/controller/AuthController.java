@@ -1,5 +1,7 @@
 package com.exodia_portal.auth.functions.auth.controller;
 
+import com.exodia_portal.auth.functions.loginmethod.dto.UnbindRequestDto;
+import com.exodia_portal.common.dto.ApiResultModel;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.http.Cookie;
@@ -130,6 +132,7 @@ public class AuthController {
     }
 
     // TODO:: remove this method or move this in the jwt service
+
     /**
      * Generates a JWT token with the specified subject and expiration time.
      *
