@@ -118,7 +118,7 @@ public class AuthServiceImpl implements AuthService {
                         .email(request.getEmail())
                         .login(login)
                         .fullName(request.getFullName())
-                        .hasEmailLogin(true)
+                        .isEmailLoginEnabled(true)
                         .build());
 
         if (user.getEmail() == null) {
@@ -128,7 +128,7 @@ public class AuthServiceImpl implements AuthService {
         if (user.getLogin() == null) {
             user.setLogin(login);
         }
-        user.setHasEmailLogin(true);
+        user.setEmailLoginEnabled(true);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user = userRepository.save(user);
 
@@ -213,13 +213,13 @@ public class AuthServiceImpl implements AuthService {
             jwtCookie.setHttpOnly(true);
             jwtCookie.setSecure(true);
             jwtCookie.setPath("/");
-            jwtCookie.setMaxAge(0); // Expire the cookie immediately
+            jwtCookie.setMaxAge(0);
             response.addCookie(jwtCookie);
 
-            Cookie isLoggedInCookies = new Cookie("isLoggedIn", "false");
+            Cookie isLoggedInCookies = new Cookie(IS_LOGGED_IN, "false");
             isLoggedInCookies.setHttpOnly(true);
             isLoggedInCookies.setPath("/");
-            isLoggedInCookies.setMaxAge((int) refreshTokenExpiration / 1000);
+            isLoggedInCookies.setMaxAge(0);
             response.addCookie(isLoggedInCookies);
         }
 
