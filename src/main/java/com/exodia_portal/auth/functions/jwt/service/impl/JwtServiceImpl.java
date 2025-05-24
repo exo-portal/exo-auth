@@ -1,18 +1,21 @@
 package com.exodia_portal.auth.functions.jwt.service.impl;
 
 import com.exodia_portal.auth.functions.jwt.service.JwtService;
+import com.exodia_portal.common.constant.ExoConstant;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+@Service
 public class JwtServiceImpl implements JwtService {
 
     @Value("${jwt.access.expiration}")
@@ -49,7 +52,7 @@ public class JwtServiceImpl implements JwtService {
     public ResponseEntity<String> getToken(HttpServletRequest request) {
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
-                if ("tkn".equals(cookie.getName())) {
+                if (ExoConstant.EXO_TOKEN_NAME.equals(cookie.getName())) {
                     return ResponseEntity.ok(cookie.getValue());
                 }
             }
