@@ -1,12 +1,11 @@
 package com.exodia_portal.auth.functions.oauth;
 
 import com.exodia_portal.auth.filter.JwtAuthenticationToken;
+import com.exodia_portal.auth.functions.jwt.service.JwtService;
 import com.exodia_portal.auth.functions.loginmethod.repository.LoginMethodRepository;
 import com.exodia_portal.auth.functions.user.repository.UserRepository;
 import com.exodia_portal.common.model.LoginMethod;
 import com.exodia_portal.common.model.User;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -20,9 +19,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
-import java.security.Key;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,6 +37,8 @@ public class CustomOAuth2UserService implements OAuth2UserService {
 
     @Value("${jwt.access.expiration}")
     private long accessTokenExpiration;
+
+    private JwtService jwtService;
 
     /**
      * Loads the user information from the OAuth2 provider.
@@ -96,7 +95,7 @@ public class CustomOAuth2UserService implements OAuth2UserService {
         user = saveLoadUser(user, providerId, providerName, login, email, fullName, avatarUrl);
 
         // Generate JWT token
-        String jwtToken = generateToken(user.getId());
+        String jwtToken = jwtService.generateToken(String.valueOf(user.getId()), accessTokenExpiration);
 
         // Store your DB ID in attributes for later retrieval
         attributes = new HashMap<>(attributes);
@@ -132,7 +131,7 @@ public class CustomOAuth2UserService implements OAuth2UserService {
         user = saveLoadUser(user, providerId, providerName, login, email, fullName, avatarUrl);
 
         // Generate JWT token
-        String jwtToken = generateToken(user.getId());
+        String jwtToken = jwtService.generateToken(String.valueOf(user.getId()), accessTokenExpiration);
 
         // Store your DB ID in attributes for later retrieval
         attributes = new HashMap<>(attributes);
@@ -145,25 +144,6 @@ public class CustomOAuth2UserService implements OAuth2UserService {
                 attributes,
                 "name"
         );
-    }
-
-    // TODO: remove this method
-
-    /**
-     * Generates a JWT token for the user.
-     *
-     * @param id The ID of the user.
-     * @return The generated JWT token.
-     */
-    private String generateToken(long id) {
-        Key key = new javax.crypto.spec.SecretKeySpec(secretKey.getBytes(), SignatureAlgorithm.HS256.getJcaName());
-
-        return Jwts.builder()
-                .setSubject(String.valueOf(id))
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
     }
 
     /**
