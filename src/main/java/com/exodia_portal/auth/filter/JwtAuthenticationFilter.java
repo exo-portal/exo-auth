@@ -1,5 +1,7 @@
 package com.exodia_portal.auth.filter;
 
+import com.exodia_portal.auth.config.SecurityConfig;
+import com.exodia_portal.common.constant.ExoConstant;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;
@@ -11,9 +13,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -21,6 +25,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Value("${jwt.secret}")
     private String secretKey;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        return Arrays.stream(SecurityConfig.PUBLIC_ENDPOINTS)
+                .anyMatch(endpoint -> new AntPathMatcher().match(endpoint, request.getServletPath()));
+    }
 
     /**
      * This method is called for each request to check if a JWT token is present in the cookies.
@@ -40,7 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Extract JWT from cookies
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
-                if ("tkn".equals(cookie.getName())) {
+                if (ExoConstant.EXO_TOKEN_NAME.equals(cookie.getName())) {
                     jwt = cookie.getValue();
                     break;
                 }

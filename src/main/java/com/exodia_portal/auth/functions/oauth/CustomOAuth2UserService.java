@@ -38,6 +38,7 @@ public class CustomOAuth2UserService implements OAuth2UserService {
     @Value("${jwt.access.expiration}")
     private long accessTokenExpiration;
 
+    @Autowired
     private JwtService jwtService;
 
     /**
