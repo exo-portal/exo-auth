@@ -28,7 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
