@@ -40,6 +40,7 @@ public class SecurityConfig {
             "/authentication/get-security-token",
             "/authentication/register",
             "/authentication/login",
+            "/authentication/validate-email/**",
     };
 
     /**

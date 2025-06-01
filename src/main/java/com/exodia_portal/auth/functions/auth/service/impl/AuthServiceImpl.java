@@ -6,6 +6,8 @@ import com.exodia_portal.auth.functions.auth.dto.RegisterRequestDto;
 import com.exodia_portal.auth.functions.auth.service.AuthService;
 import com.exodia_portal.auth.functions.jwt.service.JwtService;
 import com.exodia_portal.auth.functions.user.repository.UserRepository;
+import com.exodia_portal.common.constant.ExoErrorTypeEnum;
+import com.exodia_portal.common.exceptions.ExoPortalException;
 import com.exodia_portal.common.model.User;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.exodia_portal.common.constant.ExoConstant.EXO_JSESSION_ID;
@@ -43,6 +46,17 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+
+    @Override
+    public ResponseEntity<String> validateEmail(String email) {
+        // Check if the email is already registered
+        boolean isEmailRegistered = userRepository.findByEmailAndIsDeletedFalse(email).isPresent();
+        if (isEmailRegistered) {
+            return ResponseEntity.status(400).body("Email is already registered");
+        }
+        return ResponseEntity.ok("Email is available for registration");
+    }
 
     /**
      * Handles user logout by invalidating the session and clearing the JWT cookie.
@@ -81,7 +95,14 @@ public class AuthServiceImpl implements AuthService {
                 .orElse(null);
 
         if (user == null) {
-            return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password"));
+            throw new ExoPortalException(
+                    401,
+                    ExoErrorTypeEnum.FIELD,
+                    List.of(
+                            Map.of("fieldName", "email", "errorMessage", "Invalid email or password"),
+                            Map.of("fieldName", "password", "errorMessage", "Invalid email or password")
+                    )
+            );
         }
 
         // Generate tokens for the authenticated user

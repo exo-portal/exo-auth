@@ -12,6 +12,8 @@ import java.util.Map;
 @Service
 public interface AuthService {
 
+    ResponseEntity<String> validateEmail(String email);
+
     /**
      * Handles user logout by invalidating the session and clearing the JWT cookie.
      *
