@@ -9,6 +9,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -26,12 +28,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Value("${jwt.secret}")
     private String secretKey;
 
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String servletPath = request.getServletPath();
         boolean isPublicEndpoint = Arrays.stream(SecurityConfig.PUBLIC_ENDPOINTS)
                 .anyMatch(endpoint -> new AntPathMatcher().match(endpoint, servletPath));
-        System.out.println("Servlet Path: " + servletPath + ", Is Public Endpoint: " + isPublicEndpoint);
+        logger.debug("Servlet Path: {}, Is Public Endpoint: {}", servletPath, isPublicEndpoint);
         return isPublicEndpoint;
     }
     /**
@@ -48,7 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String jwt = null;
-        System.out.println("Processing request in JwtAuthenticationFilter: " + request.getServletPath());
+        logger.debug("Processing request in JwtAuthenticationFilter: {}", request.getServletPath());
         // Extract JWT from cookies
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {

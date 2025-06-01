@@ -61,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
         boolean isEmailRegistered = userRepository.findByEmailAndIsDeletedFalse(email).isPresent();
         if (isEmailRegistered) {
             throw new ExoPortalException(
-                    401,
+                    409,
                     ExoErrorTypeEnum.FIELD,
                     List.of(
                             ExoErrorUtil.buildFieldError(User.EMAIL, ExoErrorKeyEnum.EMAIL_ALREADY_EXISTS)
