@@ -28,10 +28,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        return Arrays.stream(SecurityConfig.PUBLIC_ENDPOINTS)
-                .anyMatch(endpoint -> new AntPathMatcher().match(endpoint, request.getServletPath()));
+        String servletPath = request.getServletPath();
+        boolean isPublicEndpoint = Arrays.stream(SecurityConfig.PUBLIC_ENDPOINTS)
+                .anyMatch(endpoint -> new AntPathMatcher().match(endpoint, servletPath));
+        System.out.println("Servlet Path: " + servletPath + ", Is Public Endpoint: " + isPublicEndpoint);
+        return isPublicEndpoint;
     }
-
     /**
      * This method is called for each request to check if a JWT token is present in the cookies.
      * If a valid token is found, it sets the authentication in the SecurityContext.
@@ -46,7 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String jwt = null;
-
+        System.out.println("Processing request in JwtAuthenticationFilter: " + request.getServletPath());
         // Extract JWT from cookies
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {

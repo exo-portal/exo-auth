@@ -6,9 +6,11 @@ import com.exodia_portal.auth.functions.auth.dto.RegisterRequestDto;
 import com.exodia_portal.auth.functions.auth.service.AuthService;
 import com.exodia_portal.auth.functions.jwt.service.JwtService;
 import com.exodia_portal.auth.functions.user.repository.UserRepository;
+import com.exodia_portal.common.constant.ExoErrorKeyEnum;
 import com.exodia_portal.common.constant.ExoErrorTypeEnum;
 import com.exodia_portal.common.exceptions.ExoPortalException;
 import com.exodia_portal.common.model.User;
+import com.exodia_portal.common.utils.ExoErrorUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -47,13 +49,24 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-
+    /**
+     * Validates the provided email address by checking if it is already registered.
+     *
+     * @param email the email address to validate
+     * @return a ResponseEntity with a message indicating whether the email is available for registration or not
+     */
     @Override
     public ResponseEntity<String> validateEmail(String email) {
         // Check if the email is already registered
         boolean isEmailRegistered = userRepository.findByEmailAndIsDeletedFalse(email).isPresent();
         if (isEmailRegistered) {
-            return ResponseEntity.status(400).body("Email is already registered");
+            throw new ExoPortalException(
+                    401,
+                    ExoErrorTypeEnum.FIELD,
+                    List.of(
+                            ExoErrorUtil.buildFieldError(User.emailPropertyName, ExoErrorKeyEnum.EMAIL_ALREADY_EXISTS)
+                    )
+            );
         }
         return ResponseEntity.ok("Email is available for registration");
     }
@@ -99,8 +112,8 @@ public class AuthServiceImpl implements AuthService {
                     401,
                     ExoErrorTypeEnum.FIELD,
                     List.of(
-                            Map.of("fieldName", "email", "errorMessage", "Invalid email or password"),
-                            Map.of("fieldName", "password", "errorMessage", "Invalid email or password")
+                            ExoErrorUtil.buildFieldError(User.emailPropertyName, ExoErrorKeyEnum.INVALID_EMAIL_AND_PASSWORD),
+                            ExoErrorUtil.buildFieldError(User.passwordPropertyName, ExoErrorKeyEnum.INVALID_EMAIL_AND_PASSWORD)
                     )
             );
         }

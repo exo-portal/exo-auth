@@ -40,7 +40,7 @@ public class SecurityConfig {
             "/authentication/get-security-token",
             "/authentication/register",
             "/authentication/login",
-            "/authentication/validate-email/**",
+            "/authentication/validate-email",
     };
 
     /**
@@ -56,9 +56,8 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(SecurityConfig.PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .anyRequest().authenticated()
-
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
