@@ -50,10 +50,16 @@ public class AuthServiceImpl implements AuthService {
     private PasswordEncoder passwordEncoder;
 
     /**
-     * Validates the provided email address by checking if it is already registered.
+     * Validates whether an email is available for registration.
+     * <p>
+     * This method checks if the provided email is already registered in the system.
+     * If the email is found, it throws an `ExoPortalException` with HTTP status code 409
+     * (Conflict) and an appropriate error message. Otherwise, it returns a success response
+     * indicating the email is available for registration.
      *
      * @param email the email address to validate
-     * @return a ResponseEntity with a message indicating whether the email is available for registration or not
+     * @return a `ResponseEntity` containing a success message if the email is available
+     * @throws ExoPortalException if the email is already registered
      */
     @Override
     public ResponseEntity<String> validateEmail(String email) {
