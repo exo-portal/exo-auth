@@ -12,6 +12,12 @@ import java.util.Map;
 @Service
 public interface AuthService {
 
+    /**
+     * Validates the provided email address.
+     *
+     * @param email the email address to validate
+     * @return a ResponseEntity with a message indicating whether the email is valid or not
+     */
     ResponseEntity<String> validateEmail(String email);
 
     /**
