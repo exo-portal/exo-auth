@@ -64,7 +64,7 @@ public class AuthServiceImpl implements AuthService {
                     401,
                     ExoErrorTypeEnum.FIELD,
                     List.of(
-                            ExoErrorUtil.buildFieldError(User.emailPropertyName, ExoErrorKeyEnum.EMAIL_ALREADY_EXISTS)
+                            ExoErrorUtil.buildFieldError(User.EMAIL, ExoErrorKeyEnum.EMAIL_ALREADY_EXISTS)
                     )
             );
         }
@@ -112,8 +112,8 @@ public class AuthServiceImpl implements AuthService {
                     401,
                     ExoErrorTypeEnum.FIELD,
                     List.of(
-                            ExoErrorUtil.buildFieldError(User.emailPropertyName, ExoErrorKeyEnum.INVALID_EMAIL_AND_PASSWORD),
-                            ExoErrorUtil.buildFieldError(User.passwordPropertyName, ExoErrorKeyEnum.INVALID_EMAIL_AND_PASSWORD)
+                            ExoErrorUtil.buildFieldError(User.EMAIL, ExoErrorKeyEnum.INVALID_EMAIL_AND_PASSWORD),
+                            ExoErrorUtil.buildFieldError(User.PASSWORD, ExoErrorKeyEnum.INVALID_EMAIL_AND_PASSWORD)
                     )
             );
         }
