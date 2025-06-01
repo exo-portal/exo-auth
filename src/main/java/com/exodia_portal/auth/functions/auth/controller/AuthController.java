@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -27,8 +28,14 @@ public class AuthController {
     @Autowired
     private JwtService jwtService;
 
-    @GetMapping("validate-email/{email}")
-    public ResponseEntity<String> validateEmail(@PathVariable("email") String email) {
+    /**
+     * Validates the email address by checking if it exists in the system.
+     *
+     * @param email the email address to validate
+     * @return a ResponseEntity indicating whether the email is valid or not
+     */
+    @GetMapping("/validate-email")
+    public ResponseEntity<String> validateEmail(@RequestParam String email) {
         return authService.validateEmail(email);
     }
 
