@@ -157,7 +157,7 @@ public class AuthServiceImpl implements AuthService {
                             ExoErrorUtil.buildFieldError(User.USER_EMAIL_FIELD, ExoErrorKeyEnum.EMAIL_ALREADY_EXISTS)
                     )
             );
-        };
+        }
 
         UserInfo userInfo = new UserInfo();
         BeanUtils.copyProperties(request, userInfo);
