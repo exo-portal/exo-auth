@@ -6,6 +6,7 @@ import com.exodia_portal.auth.functions.loginmethod.repository.LoginMethodReposi
 import com.exodia_portal.auth.functions.user.repository.UserRepository;
 import com.exodia_portal.common.model.LoginMethod;
 import com.exodia_portal.common.model.User;
+import com.exodia_portal.common.model.UserInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -176,10 +177,16 @@ public class CustomOAuth2UserService implements OAuth2UserService {
                     .orElseGet(() -> {
                         User newUser = User.builder()
                                 .email(email)
-                                .fullName(fullName)
-                                .avatarUrl(avatarUrl)
                                 .login(login)
                                 .build();
+
+                        UserInfo userInfo = UserInfo.builder()
+                                .fullName(fullName)
+                                .avatarUrl(avatarUrl)
+                                .user(newUser)
+                                .build();
+
+                        newUser.setUserInfo(userInfo);
                         return userRepository.save(newUser);
                     });
         }
