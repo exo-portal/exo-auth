@@ -10,10 +10,12 @@ import com.exodia_portal.common.constant.ExoErrorKeyEnum;
 import com.exodia_portal.common.constant.ExoErrorTypeEnum;
 import com.exodia_portal.common.exceptions.ExoPortalException;
 import com.exodia_portal.common.model.User;
+import com.exodia_portal.common.model.UserInfo;
 import com.exodia_portal.common.utils.ExoErrorUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -70,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
                     409,
                     ExoErrorTypeEnum.FIELD,
                     List.of(
-                            ExoErrorUtil.buildFieldError(User.EMAIL, ExoErrorKeyEnum.EMAIL_ALREADY_EXISTS)
+                            ExoErrorUtil.buildFieldError(User.USER_EMAIL_FIELD, ExoErrorKeyEnum.EMAIL_ALREADY_EXISTS)
                     )
             );
         }
@@ -118,8 +120,8 @@ public class AuthServiceImpl implements AuthService {
                     401,
                     ExoErrorTypeEnum.FIELD,
                     List.of(
-                            ExoErrorUtil.buildFieldError(User.EMAIL, ExoErrorKeyEnum.INVALID_EMAIL_AND_PASSWORD),
-                            ExoErrorUtil.buildFieldError(User.PASSWORD, ExoErrorKeyEnum.INVALID_EMAIL_AND_PASSWORD)
+                            ExoErrorUtil.buildFieldError(User.USER_EMAIL_FIELD, ExoErrorKeyEnum.INVALID_EMAIL_AND_PASSWORD),
+                            ExoErrorUtil.buildFieldError(User.USER_PASSWORD_FIELD, ExoErrorKeyEnum.INVALID_EMAIL_AND_PASSWORD)
                     )
             );
         }
@@ -148,16 +150,25 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ResponseEntity<Map<String, String>> register(RegisterRequestDto request, HttpServletResponse response) {
         if (userRepository.findByEmailAndIsDeletedFalse(request.getEmail()).isPresent()) {
-            return ResponseEntity.status(400).body(Map.of("message", "User already exists"));
-        }
+            throw new ExoPortalException(
+                    400,
+                    ExoErrorTypeEnum.TOAST,
+                    List.of(
+                            ExoErrorUtil.buildFieldError(User.USER_EMAIL_FIELD, ExoErrorKeyEnum.EMAIL_ALREADY_EXISTS)
+                    )
+            );
+        };
+
+        UserInfo userInfo = new UserInfo();
+        BeanUtils.copyProperties(request, userInfo);
+        userInfo.setFullName(request.getFirstName() + " " + request.getLastName());
 
         String login = request.getEmail().split("@")[0];
-
         User user = userRepository.findByLoginAndIsDeletedFalse(login)
                 .orElseGet(() -> User.builder()
-                        .email(request.getEmail())
                         .login(login)
-                        .fullName(request.getFullName())
+                        .email(request.getEmail())
+                        .password(passwordEncoder.encode(request.getPassword()))
                         .isEmailLoginEnabled(true)
                         .build());
 
@@ -168,8 +179,10 @@ public class AuthServiceImpl implements AuthService {
         if (user.getLogin() == null) {
             user.setLogin(login);
         }
-        user.setEmailLoginEnabled(true);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        userInfo.setUser(user);
+        user.setUserInfo(userInfo);
+
         user = userRepository.save(user);
 
         // Generate tokens for the new user
