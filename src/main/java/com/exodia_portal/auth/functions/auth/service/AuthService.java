@@ -2,6 +2,7 @@ package com.exodia_portal.auth.functions.auth.service;
 
 import com.exodia_portal.auth.functions.auth.dto.LoginRequestDto;
 import com.exodia_portal.auth.functions.auth.dto.RegisterRequestDto;
+import com.exodia_portal.common.dto.ApiResultModel;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
@@ -30,21 +31,21 @@ public interface AuthService {
     ResponseEntity<Map<String, String>> logout(HttpServletRequest request, HttpServletResponse response);
 
     /**
-     * Handles user login by generating access and refresh tokens.
+     * Authenticates a user and generates access and refresh tokens.
      *
-     * @param request  the LoginRequestDto containing login credentials
-     * @param response the HttpServletResponse object
-     * @return a ResponseEntity with the generated tokens
+     * @param request  the LoginRequestDto containing user login details
+     * @param response the HttpServletResponse object used to set cookies or headers
+     * @return an ApiResultModel containing the authentication result and tokens
      */
-    ResponseEntity<Map<String, String>> login(LoginRequestDto request, HttpServletResponse response);
+    ApiResultModel login(LoginRequestDto request, HttpServletResponse response);
 
     /**
      * Registers a new user and generates access and refresh tokens.
      *
      * @param request  the RegisterRequestDto containing user registration details
-     * @param response the HttpServletResponse object
-     * @return a ResponseEntity with the generated tokens
+     * @param response the HttpServletResponse object used to set cookies or headers
+     * @return an ApiResultModel containing the registration result and tokens
      */
-    ResponseEntity<Map<String, String>> register(RegisterRequestDto request, HttpServletResponse response);
+    ApiResultModel register(RegisterRequestDto request, HttpServletResponse response);
 
 }

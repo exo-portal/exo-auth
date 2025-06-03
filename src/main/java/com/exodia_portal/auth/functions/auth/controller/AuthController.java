@@ -4,6 +4,7 @@ import com.exodia_portal.auth.functions.auth.dto.LoginRequestDto;
 import com.exodia_portal.auth.functions.auth.dto.RegisterRequestDto;
 import com.exodia_portal.auth.functions.auth.service.AuthService;
 import com.exodia_portal.auth.functions.jwt.service.JwtService;
+import com.exodia_portal.common.dto.ApiResultModel;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,23 +41,31 @@ public class AuthController {
 
     /**
      * Registers a new user and generates access and refresh tokens.
+     * <p>
+     * This endpoint handles user registration by accepting a request body
+     * containing user details and returning an ApiResultModel with the generated tokens.
      *
      * @param request  the RegisterRequestDto containing user registration details
-     * @param response the HttpServletResponse object
-     * @return a ResponseEntity with the generated tokens
+     * @param response the HttpServletResponse object used to set cookies or headers
+     * @return an ApiResultModel containing the registration result and tokens
      */
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@RequestBody RegisterRequestDto request, HttpServletResponse response) {
+    public ApiResultModel register(@RequestBody RegisterRequestDto request, HttpServletResponse response) {
         return authService.register(request, response);
     }
 
     /**
      * Handles user login by generating access and refresh tokens.
+     * <p>
+     * This endpoint processes the login request by validating the user's credentials
+     * and returning an ApiResultModel containing the generated tokens.
      *
-     * @return a ResponseEntity with the generated tokens
+     * @param request  the LoginRequestDto containing user login details such as email and password
+     * @param response the HttpServletResponse object used to set cookies or headers
+     * @return an ApiResultModel containing the login result and tokens
      */
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequestDto request, HttpServletResponse response) {
+    public ApiResultModel login(@RequestBody LoginRequestDto request, HttpServletResponse response) {
         return authService.login(request, response);
     }
 

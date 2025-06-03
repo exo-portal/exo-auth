@@ -2,10 +2,13 @@ package com.exodia_portal.auth.functions.auth.service.impl;
 
 import com.exodia_portal.auth.filter.JwtAuthenticationToken;
 import com.exodia_portal.auth.functions.auth.dto.LoginRequestDto;
+import com.exodia_portal.auth.functions.auth.dto.LoginResponseDto;
 import com.exodia_portal.auth.functions.auth.dto.RegisterRequestDto;
 import com.exodia_portal.auth.functions.auth.service.AuthService;
 import com.exodia_portal.auth.functions.jwt.service.JwtService;
+import com.exodia_portal.auth.functions.user.helper.UserHelper;
 import com.exodia_portal.auth.functions.user.repository.UserRepository;
+import com.exodia_portal.common.dto.ApiResultModel;
 import com.exodia_portal.common.enums.AccessLevelTypeEnum;
 import com.exodia_portal.common.enums.ExoErrorKeyEnum;
 import com.exodia_portal.common.enums.ExoErrorTypeEnum;
@@ -31,7 +34,6 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.exodia_portal.common.constant.ExoConstant.EXO_JSESSION_ID;
 import static com.exodia_portal.common.constant.ExoConstant.EXO_REFRESH_TOKEN_NAME;
@@ -110,14 +112,19 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Handles user login by generating access and refresh tokens.
+     * Authenticates a user by validating their credentials and generates access and refresh tokens.
+     * <p>
+     * This method checks the provided email and password against the stored user data.
+     * If the credentials are valid, it generates tokens and sets them in the response.
+     * Otherwise, it throws an exception indicating invalid credentials.
      *
-     * @param request  the login request containing email and password
-     * @param response the HttpServletResponse object
-     * @return a ResponseEntity with the generated tokens
+     * @param request  the LoginRequestDto containing the user's email and password
+     * @param response the HttpServletResponse object used to set cookies or headers
+     * @return an ApiResultModel containing the generated tokens and authentication result
+     * @throws ExoPortalException if the email or password is invalid
      */
     @Override
-    public ResponseEntity<Map<String, String>> login(LoginRequestDto request, HttpServletResponse response) {
+    public ApiResultModel login(LoginRequestDto request, HttpServletResponse response) {
         // Validate the request parameters
         User user = userRepository.findByEmailAndIsDeletedFalse(request.getEmail())
                 .filter(u -> passwordEncoder.matches(request.getPassword(), u.getPassword()))
@@ -140,14 +147,20 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Handles user registration by creating a new user and generating tokens.
+     * Registers a new user and assigns a default role.
+     * <p>
+     * This method validates the user's email for uniqueness, creates a new user
+     * with the provided registration details, assigns a default role, and saves
+     * the user to the database. It also generates access and refresh tokens for
+     * the newly registered user.
      *
-     * @param request  the registration request containing email, password, and full name
-     * @param response the HttpServletResponse object
-     * @return a ResponseEntity with a success message
+     * @param request  the RegisterRequestDto containing user registration details
+     * @param response the HttpServletResponse object used to set cookies or headers
+     * @return an ApiResultModel containing the registration result and tokens
+     * @throws ExoPortalException if the email is already registered or the role is not found
      */
     @Override
-    public ResponseEntity<Map<String, String>> register(RegisterRequestDto request, HttpServletResponse response) {
+    public ApiResultModel register(RegisterRequestDto request, HttpServletResponse response) {
         if (userRepository.findByEmailAndIsDeletedFalse(request.email()).isPresent()) {
             throw new ExoPortalException(
                     400,
@@ -208,13 +221,18 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Generates access and refresh tokens for the user and sets them in the response cookies.
+     * Generates access and refresh tokens for a user and sets them in the response.
+     * <p>
+     * This method retrieves the user's default access level role, feature keys, and role names.
+     * It then generates access and refresh tokens using these details and sets them as cookies
+     * in the HTTP response. Additionally, it authenticates the user in the security context.
+     * Finally, it builds and returns an `ApiResultModel` containing the login response data.
      *
-     * @param user     the authenticated user
-     * @param response the HttpServletResponse object
-     * @return a ResponseEntity with a success message
+     * @param user     the `User` object containing user details
+     * @param response the `HttpServletResponse` object used to set cookies
+     * @return an `ApiResultModel` containing the login response data
      */
-    private ResponseEntity<Map<String, String>> generateAndSetTokens(User user, HttpServletResponse response) {
+    private ApiResultModel generateAndSetTokens(User user, HttpServletResponse response) {
         AccessLevelTypeEnum accessLevelRole = user.getDefaultAccessLevelRole().orElse(AccessLevelTypeEnum.ROLE_APPLICANT); // Retrieve the default AccessLevelRole from the User
         List<String> featureKeys = user.getDefaultRoleFeatureKeys(); // Retrieve the feature keys from the default UserRole
         List<String> roleNames = user.getAccessLevelRoles().stream() // Retrieve all role names from the User's roles
@@ -243,8 +261,18 @@ public class AuthServiceImpl implements AuthService {
         Authentication authentication = new JwtAuthenticationToken(user.getId(), accessLevelRole, null);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Return success response
-        return ResponseEntity.ok(Map.of("message", "Operation successful"));
+        LoginResponseDto loginResponseDto = LoginResponseDto.builder()
+                .user(UserHelper.response(user))
+                .featureKeys(featureKeys)
+                .roleNames(roleNames)
+                .accessLevelRole(accessLevelRole)
+                .build();
+
+        return ApiResultModel.builder()
+                .isSuccess(true)
+                .message("Login Successfully")
+                .resultData(loginResponseDto)
+                .build();
     }
 
     /**
