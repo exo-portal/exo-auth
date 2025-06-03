@@ -6,11 +6,15 @@ import com.exodia_portal.auth.functions.auth.dto.RegisterRequestDto;
 import com.exodia_portal.auth.functions.auth.service.AuthService;
 import com.exodia_portal.auth.functions.jwt.service.JwtService;
 import com.exodia_portal.auth.functions.user.repository.UserRepository;
+import com.exodia_portal.common.enums.AccessLevelTypeEnum;
 import com.exodia_portal.common.enums.ExoErrorKeyEnum;
 import com.exodia_portal.common.enums.ExoErrorTypeEnum;
 import com.exodia_portal.common.exceptions.ExoPortalException;
+import com.exodia_portal.common.model.Role;
 import com.exodia_portal.common.model.User;
 import com.exodia_portal.common.model.UserInfo;
+import com.exodia_portal.common.model.UserRole;
+import com.exodia_portal.common.repository.RoleRepository;
 import com.exodia_portal.common.utils.ExoErrorUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,6 +54,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     /**
      * Validates whether an email is available for registration.
@@ -110,11 +117,12 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     public ResponseEntity<Map<String, String>> login(LoginRequestDto request, HttpServletResponse response) {
-        // Authenticate user by email and password
+        // Validate the request parameters
         User user = userRepository.findByEmailAndIsDeletedFalse(request.getEmail())
                 .filter(u -> passwordEncoder.matches(request.getPassword(), u.getPassword()))
                 .orElse(null);
 
+        // If user is not found or password does not match, throw an exception
         if (user == null) {
             throw new ExoPortalException(
                     401,
@@ -126,18 +134,8 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
-        // Generate tokens for the authenticated user
-        String accessToken = jwtService.generateToken(String.valueOf(user.getId()), accessTokenExpiration);
-        String refreshToken = jwtService.generateToken(String.valueOf(user.getId()), refreshTokenExpiration);
-
-        SetCookie(accessToken, refreshToken, response);
-
-        // Authenticate the user in the security context
-        Authentication authentication = new JwtAuthenticationToken(user.getId(), null, null);
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        // Return success response
-        return ResponseEntity.ok(Map.of("message", "Login successful"));
+        // Generate access and refresh tokens
+        return generateAndSetTokens(user, response);
     }
 
     /**
@@ -149,7 +147,7 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     public ResponseEntity<Map<String, String>> register(RegisterRequestDto request, HttpServletResponse response) {
-        if (userRepository.findByEmailAndIsDeletedFalse(request.getEmail()).isPresent()) {
+        if (userRepository.findByEmailAndIsDeletedFalse(request.email()).isPresent()) {
             throw new ExoPortalException(
                     400,
                     ExoErrorTypeEnum.TOAST,
@@ -161,42 +159,91 @@ public class AuthServiceImpl implements AuthService {
 
         UserInfo userInfo = new UserInfo();
         BeanUtils.copyProperties(request, userInfo);
-        userInfo.setFullName(request.getFirstName() + " " + request.getLastName());
+        userInfo.setFullName(request.firstName() + " " + request.lastName());
 
-        String login = request.getEmail().split("@")[0];
+        String login = request.email().split("@")[0];
         User user = userRepository.findByLoginAndIsDeletedFalse(login)
                 .orElseGet(() -> User.builder()
                         .login(login)
-                        .email(request.getEmail())
-                        .password(passwordEncoder.encode(request.getPassword()))
+                        .email(request.email())
+                        .password(passwordEncoder.encode(request.password()))
                         .isEmailLoginEnabled(true)
                         .build());
 
         if (user.getEmail() == null) {
-            user.setEmail(request.getEmail());
+            user.setEmail(request.email());
         }
 
         if (user.getLogin() == null) {
             user.setLogin(login);
         }
 
+        // Assuming you have a Role object (e.g., fetched from the database or created)
+        Role role = roleRepository.findByAccessLevelRole(AccessLevelTypeEnum.ROLE_SUPER_ADMIN)
+                .orElseThrow(() -> new ExoPortalException(
+                        404,
+                        ExoErrorTypeEnum.TOAST,
+                        List.of(ExoErrorUtil.buildFieldError("role", ExoErrorKeyEnum.ROLE_NOT_FOUND))
+                ));
+
+        UserRole userRole = UserRole.builder()
+                .user(user)
+                .role(role)
+                .isDefaultRole(true) // Set as default role if needed
+                .build();
+
         userInfo.setUser(user);
         user.setUserInfo(userInfo);
 
+        if (user.getUserRoles() == null || user.getUserRoles().isEmpty()) {
+            user.setUserRoles(List.of(userRole));
+        } else {
+            user.getUserRoles().add(userRole);
+        }
+
         user = userRepository.save(user);
 
-        // Generate tokens for the new user
-        String accessToken = jwtService.generateToken(String.valueOf(user.getId()), accessTokenExpiration);
-        String refreshToken = jwtService.generateToken(String.valueOf(user.getId()), refreshTokenExpiration);
+        return generateAndSetTokens(user, response);
+    }
 
+    /**
+     * Generates access and refresh tokens for the user and sets them in the response cookies.
+     *
+     * @param user     the authenticated user
+     * @param response the HttpServletResponse object
+     * @return a ResponseEntity with a success message
+     */
+    private ResponseEntity<Map<String, String>> generateAndSetTokens(User user, HttpServletResponse response) {
+        AccessLevelTypeEnum accessLevelRole = user.getDefaultAccessLevelRole(); // Retrieve the default AccessLevelRole from the User
+        List<String> featureKeys = user.getDefaultRoleFeatureKeys(); // Retrieve the feature keys from the default UserRole
+        List<String> roleNames = user.getAccessLevelRoles().stream() // Retrieve all role names from the User's roles
+                .map(AccessLevelTypeEnum::getAccessLevel) // Convert AccessLevelTypeEnum to String
+                .toList();
+
+        // Generate access and refresh tokens with roles and features
+        String accessToken = jwtService.generateTokenWithRolesAndFeatures(
+                String.valueOf(user.getId()),
+                accessLevelRole,
+                roleNames,
+                featureKeys,
+                accessTokenExpiration);
+
+        String refreshToken = jwtService.generateTokenWithRolesAndFeatures(
+                String.valueOf(user.getId()),
+                accessLevelRole,
+                roleNames,
+                featureKeys,
+                refreshTokenExpiration);
+
+        // Set the cookies for access and refresh tokens
         SetCookie(accessToken, refreshToken, response);
 
         // Authenticate the user in the security context
-        Authentication authentication = new JwtAuthenticationToken(user.getId(), null, null);
+        Authentication authentication = new JwtAuthenticationToken(user.getId(), accessLevelRole, null);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // Return success response
-        return ResponseEntity.ok(Map.of("message", "Registration successful"));
+        return ResponseEntity.ok(Map.of("message", "Operation successful"));
     }
 
     /**
