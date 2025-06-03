@@ -270,7 +270,7 @@ public class AuthServiceImpl implements AuthService {
 
         return ApiResultModel.builder()
                 .isSuccess(true)
-                .message("Login Successfully")
+                .message("Login successful")
                 .resultData(loginResponseDto)
                 .build();
     }
