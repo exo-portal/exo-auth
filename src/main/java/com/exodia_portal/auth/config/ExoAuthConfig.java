@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @EntityScan({"com.exodia_portal.common", "com.exodia_portal.auth"})
 @Configuration
-@ComponentScan({"com.exodia_portal.common"})
+@ComponentScan(basePackages = {"com.exodia_portal.common", "com.exodia_portal.auth"})
 @EnableJpaRepositories({"com.exodia_portal.auth", "com.exodia_portal.common"})
 public class ExoAuthConfig {
 }
