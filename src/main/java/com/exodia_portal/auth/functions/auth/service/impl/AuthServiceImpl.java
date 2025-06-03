@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.exodia_portal.common.constant.ExoConstant.EXO_JSESSION_ID;
 import static com.exodia_portal.common.constant.ExoConstant.EXO_REFRESH_TOKEN_NAME;
@@ -214,7 +215,7 @@ public class AuthServiceImpl implements AuthService {
      * @return a ResponseEntity with a success message
      */
     private ResponseEntity<Map<String, String>> generateAndSetTokens(User user, HttpServletResponse response) {
-        AccessLevelTypeEnum accessLevelRole = user.getDefaultAccessLevelRole(); // Retrieve the default AccessLevelRole from the User
+        AccessLevelTypeEnum accessLevelRole = user.getDefaultAccessLevelRole().orElse(AccessLevelTypeEnum.ROLE_APPLICANT); // Retrieve the default AccessLevelRole from the User
         List<String> featureKeys = user.getDefaultRoleFeatureKeys(); // Retrieve the feature keys from the default UserRole
         List<String> roleNames = user.getAccessLevelRoles().stream() // Retrieve all role names from the User's roles
                 .map(AccessLevelTypeEnum::getAccessLevel) // Convert AccessLevelTypeEnum to String
