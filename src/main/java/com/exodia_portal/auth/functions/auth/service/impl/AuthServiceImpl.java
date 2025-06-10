@@ -31,9 +31,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.exodia_portal.common.constant.ExoConstant.EXO_JSESSION_ID;
 import static com.exodia_portal.common.constant.ExoConstant.EXO_REFRESH_TOKEN_NAME;
@@ -46,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
     @Value("${jwt.access.expiration}")
     private long accessTokenExpiration;
 
+    //noinspection FieldCanBeFinal
     @Value("${jwt.refresh.expiration}")
     private long refreshTokenExpiration;
 
@@ -97,7 +96,7 @@ public class AuthServiceImpl implements AuthService {
      * @return a ResponseEntity with a success message
      */
     @Override
-    public ResponseEntity<Map<String, String>> logout(HttpServletRequest request, HttpServletResponse response) {
+    public ApiResultModel logout(HttpServletRequest request, HttpServletResponse response) {
         // Clear the JWT and refresh token cookies
         SetCookie(null, null, response, true);
 
@@ -105,10 +104,11 @@ public class AuthServiceImpl implements AuthService {
         request.getSession().invalidate();
         SecurityContextHolder.clearContext();
 
-        // Response message
-        Map<String, String> responseBody = new HashMap<>();
-        responseBody.put("message", "Logged out successfully");
-        return ResponseEntity.ok(responseBody);
+        return ApiResultModel.builder()
+                .isSuccess(true)
+                .message("Logged out successfully")
+                .resultData(null)
+                .build();
     }
 
     /**

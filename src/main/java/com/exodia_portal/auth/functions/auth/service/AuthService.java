@@ -28,7 +28,7 @@ public interface AuthService {
      * @param response the HttpServletResponse object
      * @return a ResponseEntity with a success message
      */
-    ResponseEntity<Map<String, String>> logout(HttpServletRequest request, HttpServletResponse response);
+    ApiResultModel logout(HttpServletRequest request, HttpServletResponse response);
 
     /**
      * Authenticates a user and generates access and refresh tokens.
