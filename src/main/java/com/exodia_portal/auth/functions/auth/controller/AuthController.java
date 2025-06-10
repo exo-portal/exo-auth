@@ -77,7 +77,7 @@ public class AuthController {
      * @return a ResponseEntity with a success message
      */
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout(HttpServletRequest request, HttpServletResponse response) {
+    public ApiResultModel logout(HttpServletRequest request, HttpServletResponse response) {
         return authService.logout(request, response);
     }
 
