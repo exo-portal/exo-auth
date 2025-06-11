@@ -16,14 +16,16 @@ public class UserHelper {
         UserResponseDto response = new UserResponseDto();
         BeanUtils.copyProperties(user, response);
 
-        user.getLoginMethods()
-                .forEach(loginMethod -> {
-                    if (loginMethod.getProviderName().equalsIgnoreCase("GOOGLE")) {
-                        response.setGoogleId(loginMethod.getProviderId());
-                    } else if (loginMethod.getProviderName().equalsIgnoreCase("GITHUB")) {
-                        response.setGithubId(loginMethod.getProviderId());
-                    }
-                });
+        if (user.getLoginMethods() != null && !user.getLoginMethods().isEmpty()) {
+            user.getLoginMethods()
+                    .forEach(loginMethod -> {
+                        if (loginMethod.getProviderName().equalsIgnoreCase("GOOGLE")) {
+                            response.setGoogleId(loginMethod.getProviderId());
+                        } else if (loginMethod.getProviderName().equalsIgnoreCase("GITHUB")) {
+                            response.setGithubId(loginMethod.getProviderId());
+                        }
+                    });
+        }
 
         if (user.getPassword() != null
                 && !user.getPassword().isEmpty()
