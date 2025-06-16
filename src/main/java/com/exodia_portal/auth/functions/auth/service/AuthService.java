@@ -13,6 +13,8 @@ import java.util.Map;
 @Service
 public interface AuthService {
 
+    ApiResultModel verifySession(HttpServletRequest request);
+
     /**
      * Validates the provided email address.
      *
