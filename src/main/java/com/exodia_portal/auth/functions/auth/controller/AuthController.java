@@ -29,6 +29,21 @@ public class AuthController {
     private JwtService jwtService;
 
     /**
+     * Verifies the session by checking the validity of the JWT token.
+     * <p>
+     * This endpoint is used to verify if the current session is valid by checking
+     * the JWT token in the request. It returns an ApiResultModel indicating the
+     * result of the verification.
+     *
+     * @param request the HttpServletRequest object containing the JWT token
+     * @return an ApiResultModel indicating whether the session is valid or not
+     */
+    @GetMapping("/verify-session")
+    public ApiResultModel verifySession(HttpServletRequest request) {
+        return authService.verifySession(request);
+    }
+
+    /**
      * Validates the email address by checking if it exists in the system.
      *
      * @param email the email address to validate

@@ -8,6 +8,7 @@ import com.exodia_portal.auth.functions.auth.service.AuthService;
 import com.exodia_portal.auth.functions.jwt.service.JwtService;
 import com.exodia_portal.auth.functions.user.helper.UserHelper;
 import com.exodia_portal.auth.functions.user.repository.UserRepository;
+import com.exodia_portal.common.constant.ExoConstant;
 import com.exodia_portal.common.dto.ApiResultModel;
 import com.exodia_portal.common.enums.AccessLevelTypeEnum;
 import com.exodia_portal.common.enums.ExoErrorKeyEnum;
@@ -19,12 +20,15 @@ import com.exodia_portal.common.model.UserInfo;
 import com.exodia_portal.common.model.UserRole;
 import com.exodia_portal.common.repository.RoleRepository;
 import com.exodia_portal.common.utils.ExoErrorUtil;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -48,6 +52,9 @@ public class AuthServiceImpl implements AuthService {
     @Value("${jwt.refresh.expiration}")
     private long refreshTokenExpiration;
 
+    @Value("${jwt.secret}")
+    private String secretKey;
+
     @Autowired
     private JwtService jwtService;
 
@@ -59,6 +66,68 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Override
+    public ApiResultModel verifySession(HttpServletRequest request) {
+        String jwt = null;
+
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if (ExoConstant.EXO_TOKEN_NAME.equals(cookie.getName())) {
+                    jwt = cookie.getValue();
+                    break;
+                }
+            }
+        }
+        if (jwt != null) {
+            try {
+                Claims claims = Jwts.parserBuilder()
+                        .setSigningKey(secretKey.getBytes())
+                        .build()
+                        .parseClaimsJws(jwt)
+                        .getBody();
+
+                String userId = claims.getSubject();
+                AccessLevelTypeEnum currentRole = AccessLevelTypeEnum.valueOf(claims.get("currentRole", String.class));
+                List<String> roles = (List<String>) claims.get("roles", List.class);
+                List<String> features = (List<String>) claims.get("features", List.class);
+
+                User user = userRepository.findByIdAndIsDeletedFalse(Long.parseLong(userId))
+                        .orElseThrow(() -> new ExoPortalException(
+                                HttpStatus.UNAUTHORIZED.value(),
+                                ExoErrorTypeEnum.MODAL,
+                                List.of(ExoErrorUtil.buildFieldError("token", ExoErrorKeyEnum.INVALID_OR_EXPIRED_TOKEN))
+                        ));
+
+                LoginResponseDto userResponseDto = LoginResponseDto.builder()
+                        .user(UserHelper.response(user))
+                        .featureKeys(features)
+                        .roleNames(roles)
+                        .accessLevelRole(currentRole)
+                        .build();
+
+                if (SecurityContextHolder.getContext().getAuthentication() != null) {
+                    return ApiResultModel.builder()
+                            .isSuccess(true)
+                            .message("User is Authorized")
+                            .resultData(userResponseDto)
+                            .build();
+                }
+            } catch (Exception e) {
+                throw new ExoPortalException(
+                        401,
+                        ExoErrorTypeEnum.MODAL,
+                        List.of(ExoErrorUtil.buildFieldError("token", ExoErrorKeyEnum.INVALID_OR_EXPIRED_TOKEN))
+                );
+            }
+        }
+
+        throw new ExoPortalException(
+                401,
+                ExoErrorTypeEnum.MODAL,
+                List.of(ExoErrorUtil.buildFieldError("token", ExoErrorKeyEnum.INVALID_OR_EXPIRED_TOKEN))
+        );
+    }
 
     /**
      * Validates whether an email is available for registration.
