@@ -12,7 +12,16 @@ import java.util.Map;
 
 @Service
 public interface AuthService {
-
+    /**
+     * Verifies the user's session by checking the validity of the JWT token.
+     * <p>
+     * This method extracts the JWT token from the request, validates it, and determines
+     * whether the user is authenticated. If the token is valid, the session is considered
+     * active; otherwise, it returns an error response.
+     *
+     * @param request the HttpServletRequest object containing the user's session details
+     * @return an ApiResultModel indicating the result of the session verification
+     */
     ApiResultModel verifySession(HttpServletRequest request);
 
     /**
@@ -24,11 +33,22 @@ public interface AuthService {
     ResponseEntity<String> validateEmail(String email);
 
     /**
-     * Handles user logout by invalidating the session and clearing the JWT cookie.
+     * Logs out the user by clearing authentication-related cookies, invalidating the session,
+     * and clearing the security context.
+     * <p>
+     * This method ensures that the user's session is terminated securely by performing
+     * the following actions:
+     * <ul>
+     *   <li>Clears the JWT and refresh token cookies.</li>
+     *   <li>Invalidates the current HTTP session to remove session data.</li>
+     *   <li>Clears the Spring Security context to remove authentication information.</li>
+     * </ul>
+     * <p>
+     * Returns a success response indicating the logout operation was completed.
      *
-     * @param request  the HttpServletRequest object
-     * @param response the HttpServletResponse object
-     * @return a ResponseEntity with a success message
+     * @param request  the HttpServletRequest object representing the current HTTP request
+     * @param response the HttpServletResponse object used to modify cookies and headers
+     * @return an ApiResultModel containing the result of the logout operation
      */
     ApiResultModel logout(HttpServletRequest request, HttpServletResponse response);
 
