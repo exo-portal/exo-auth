@@ -158,11 +158,21 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Handles user logout by invalidating the session and clearing the JWT cookie.
+     * Logs out the user by clearing authentication-related cookies, invalidating the session,
+     * and clearing the security context.
+     * <p>
+     * This method performs the following actions:
+     * <ul>
+     *   <li>Clears the JWT and refresh token cookies by calling the `SetCookie` method with `isLogout` set to `true`.</li>
+     *   <li>Invalidates the current HTTP session to ensure no session data is retained.</li>
+     *   <li>Clears the Spring Security context to remove any authentication information.</li>
+     * </ul>
+     * <p>
+     * Returns a success response indicating the user has been logged out.
      *
-     * @param request  the HttpServletRequest object
-     * @param response the HttpServletResponse object
-     * @return a ResponseEntity with a success message
+     * @param request  the `HttpServletRequest` object representing the current HTTP request
+     * @param response the `HttpServletResponse` object used to modify cookies and headers
+     * @return an `ApiResultModel` containing the logout result
      */
     @Override
     public ApiResultModel logout(HttpServletRequest request, HttpServletResponse response) {
