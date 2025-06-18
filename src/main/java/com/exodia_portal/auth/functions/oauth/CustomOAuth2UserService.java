@@ -4,9 +4,17 @@ import com.exodia_portal.auth.filter.JwtAuthenticationToken;
 import com.exodia_portal.auth.functions.jwt.service.JwtService;
 import com.exodia_portal.auth.functions.loginmethod.repository.LoginMethodRepository;
 import com.exodia_portal.auth.functions.user.repository.UserRepository;
+import com.exodia_portal.common.enums.AccessLevelTypeEnum;
+import com.exodia_portal.common.enums.ExoErrorKeyEnum;
+import com.exodia_portal.common.enums.ExoErrorTypeEnum;
+import com.exodia_portal.common.exceptions.ExoPortalException;
 import com.exodia_portal.common.model.LoginMethod;
+import com.exodia_portal.common.model.Role;
 import com.exodia_portal.common.model.User;
 import com.exodia_portal.common.model.UserInfo;
+import com.exodia_portal.common.model.UserRole;
+import com.exodia_portal.common.repository.RoleRepository;
+import com.exodia_portal.common.utils.ExoErrorUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -22,6 +30,7 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -41,6 +50,9 @@ public class CustomOAuth2UserService implements OAuth2UserService {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     /**
      * Loads the user information from the OAuth2 provider.
@@ -96,8 +108,19 @@ public class CustomOAuth2UserService implements OAuth2UserService {
         // Check if the email is null, if so, set it to the login name
         user = saveLoadUser(user, providerId, providerName, login, email, fullName, avatarUrl);
 
+        AccessLevelTypeEnum accessLevelRole = user.getDefaultAccessLevelRole().orElse(AccessLevelTypeEnum.ROLE_APPLICANT); // Retrieve the default AccessLevelRole from the User
+        List<String> featureKeys = user.getDefaultRoleFeatureKeys(); // Retrieve the feature keys from the default UserRole
+        List<String> roleNames = user.getAccessLevelRoles().stream() // Retrieve all role names from the User's roles
+                .map(AccessLevelTypeEnum::getAccessLevel) // Convert AccessLevelTypeEnum to String
+                .toList();
+
         // Generate JWT token
-        String jwtToken = jwtService.generateToken(String.valueOf(user.getId()), accessTokenExpiration);
+        String jwtToken = jwtService.generateTokenWithRolesAndFeatures(
+                String.valueOf(user.getId()),
+                accessLevelRole,
+                roleNames,
+                featureKeys,
+                accessTokenExpiration);
 
         // Store your DB ID in attributes for later retrieval
         attributes = new HashMap<>(attributes);
@@ -132,8 +155,19 @@ public class CustomOAuth2UserService implements OAuth2UserService {
 
         user = saveLoadUser(user, providerId, providerName, login, email, fullName, avatarUrl);
 
+        AccessLevelTypeEnum accessLevelRole = user.getDefaultAccessLevelRole().orElse(AccessLevelTypeEnum.ROLE_APPLICANT); // Retrieve the default AccessLevelRole from the User
+        List<String> featureKeys = user.getDefaultRoleFeatureKeys(); // Retrieve the feature keys from the default UserRole
+        List<String> roleNames = user.getAccessLevelRoles().stream() // Retrieve all role names from the User's roles
+                .map(AccessLevelTypeEnum::getAccessLevel) // Convert AccessLevelTypeEnum to String
+                .toList();
+
         // Generate JWT token
-        String jwtToken = jwtService.generateToken(String.valueOf(user.getId()), accessTokenExpiration);
+        String jwtToken = jwtService.generateTokenWithRolesAndFeatures(
+                String.valueOf(user.getId()),
+                accessLevelRole,
+                roleNames,
+                featureKeys,
+                accessTokenExpiration);
 
         // Store your DB ID in attributes for later retrieval
         attributes = new HashMap<>(attributes);
@@ -208,6 +242,29 @@ public class CustomOAuth2UserService implements OAuth2UserService {
             loginMethod.setDeleted(false);
             loginMethodRepository.save(loginMethod);
         }
+
+        try {
+            if (finalUser.getUserRoles() == null || finalUser.getUserRoles().isEmpty()) {
+                // Assuming you have a Role object (e.g., fetched from the database or created)
+                Role role = roleRepository.findByAccessLevelRole(AccessLevelTypeEnum.ROLE_SUPER_ADMIN)
+                        .orElseThrow(() -> new ExoPortalException(
+                                404,
+                                ExoErrorTypeEnum.TOAST,
+                                List.of(ExoErrorUtil.buildFieldError("role", ExoErrorKeyEnum.ROLE_NOT_FOUND))
+                        ));
+
+                UserRole userRole = UserRole.builder()
+                        .user(finalUser)
+                        .role(role)
+                        .isDefaultRole(true) // Set as default role if needed
+                        .build();
+                finalUser.setUserRoles(List.of(userRole));
+                return userRepository.save(finalUser);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return user;
     }
 }
