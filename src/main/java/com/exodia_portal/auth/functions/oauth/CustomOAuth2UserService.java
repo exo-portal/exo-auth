@@ -108,19 +108,7 @@ public class CustomOAuth2UserService implements OAuth2UserService {
         // Check if the email is null, if so, set it to the login name
         user = saveLoadUser(user, providerId, providerName, login, email, fullName, avatarUrl);
 
-        AccessLevelTypeEnum accessLevelRole = user.getDefaultAccessLevelRole().orElse(AccessLevelTypeEnum.ROLE_APPLICANT); // Retrieve the default AccessLevelRole from the User
-        List<String> featureKeys = user.getDefaultRoleFeatureKeys(); // Retrieve the feature keys from the default UserRole
-        List<String> roleNames = user.getAccessLevelRoles().stream() // Retrieve all role names from the User's roles
-                .map(AccessLevelTypeEnum::getAccessLevel) // Convert AccessLevelTypeEnum to String
-                .toList();
-
-        // Generate JWT token
-        String jwtToken = jwtService.generateTokenWithRolesAndFeatures(
-                String.valueOf(user.getId()),
-                accessLevelRole,
-                roleNames,
-                featureKeys,
-                accessTokenExpiration);
+        String jwtToken = generateJwtTokenForUser(user);
 
         // Store your DB ID in attributes for later retrieval
         attributes = new HashMap<>(attributes);
@@ -155,19 +143,7 @@ public class CustomOAuth2UserService implements OAuth2UserService {
 
         user = saveLoadUser(user, providerId, providerName, login, email, fullName, avatarUrl);
 
-        AccessLevelTypeEnum accessLevelRole = user.getDefaultAccessLevelRole().orElse(AccessLevelTypeEnum.ROLE_APPLICANT); // Retrieve the default AccessLevelRole from the User
-        List<String> featureKeys = user.getDefaultRoleFeatureKeys(); // Retrieve the feature keys from the default UserRole
-        List<String> roleNames = user.getAccessLevelRoles().stream() // Retrieve all role names from the User's roles
-                .map(AccessLevelTypeEnum::getAccessLevel) // Convert AccessLevelTypeEnum to String
-                .toList();
-
-        // Generate JWT token
-        String jwtToken = jwtService.generateTokenWithRolesAndFeatures(
-                String.valueOf(user.getId()),
-                accessLevelRole,
-                roleNames,
-                featureKeys,
-                accessTokenExpiration);
+        String jwtToken = generateJwtTokenForUser(user);
 
         // Store your DB ID in attributes for later retrieval
         attributes = new HashMap<>(attributes);
@@ -263,4 +239,27 @@ public class CustomOAuth2UserService implements OAuth2UserService {
 
         return user;
     }
+
+    /**
+     * Generates a JWT token for the user with their roles and features.
+     *
+     * @param user The user for whom the JWT token is generated.
+     * @return The generated JWT token as a String.
+     */
+    private String generateJwtTokenForUser(User user) {
+        AccessLevelTypeEnum accessLevelRole = user.getDefaultAccessLevelRole().orElse(AccessLevelTypeEnum.ROLE_APPLICANT); // Retrieve the default AccessLevelRole from the User
+        List<String> featureKeys = user.getDefaultRoleFeatureKeys(); // Retrieve the feature keys from the default UserRole
+        List<String> roleNames = user.getAccessLevelRoles().stream() // Retrieve all role names from the User's roles
+                .map(AccessLevelTypeEnum::getAccessLevel) // Convert AccessLevelTypeEnum to String
+                .toList();
+
+        // Generate JWT token
+        return jwtService.generateTokenWithRolesAndFeatures(
+                String.valueOf(user.getId()),
+                accessLevelRole,
+                roleNames,
+                featureKeys,
+                accessTokenExpiration);
+    }
+
 }
