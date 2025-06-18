@@ -73,7 +73,7 @@ public class SecurityConfig {
 
                             response.addHeader("Set-Cookie", ExoConstant.EXO_TOKEN_NAME + "=" + jwtToken + "; HttpOnly; Path=/; Secure; SameSite=Strict");
                             response.addHeader("Set-Cookie", ExoConstant.IS_LOGGED_IN + "=true; Path=/; Secure; SameSite=Strict");
-                            response.sendRedirect("http://localhost:3000/en/home");
+                            response.sendRedirect("http://localhost:3000/auth/callback");
                         })
                 );
         return http.build();
