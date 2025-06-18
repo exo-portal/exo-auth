@@ -34,6 +34,9 @@ public class SecurityConfig {
     @Value("${allowed.origin}")
     private String allowedOrigins;
 
+    @Value("${frontend.callback-url}")
+    private String callbackUrl;
+
     public static final String[] PUBLIC_ENDPOINTS = {
             "/authentication/verify-session",
             "/authentication/logout",
@@ -73,7 +76,7 @@ public class SecurityConfig {
 
                             response.addHeader("Set-Cookie", ExoConstant.EXO_TOKEN_NAME + "=" + jwtToken + "; HttpOnly; Path=/; Secure; SameSite=Strict");
                             response.addHeader("Set-Cookie", ExoConstant.IS_LOGGED_IN + "=true; Path=/; Secure; SameSite=Strict");
-                            response.sendRedirect("http://localhost:3000/auth/callback");
+                            response.sendRedirect(callbackUrl);
                         })
                 );
         return http.build();
