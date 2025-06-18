@@ -243,26 +243,22 @@ public class CustomOAuth2UserService implements OAuth2UserService {
             loginMethodRepository.save(loginMethod);
         }
 
-        try {
-            if (finalUser.getUserRoles() == null || finalUser.getUserRoles().isEmpty()) {
-                // Assuming you have a Role object (e.g., fetched from the database or created)
-                Role role = roleRepository.findByAccessLevelRole(AccessLevelTypeEnum.ROLE_SUPER_ADMIN)
-                        .orElseThrow(() -> new ExoPortalException(
-                                404,
-                                ExoErrorTypeEnum.TOAST,
-                                List.of(ExoErrorUtil.buildFieldError("role", ExoErrorKeyEnum.ROLE_NOT_FOUND))
-                        ));
+        if (finalUser.getUserRoles() == null || finalUser.getUserRoles().isEmpty()) {
+            // Assuming you have a Role object (e.g., fetched from the database or created)
+            Role role = roleRepository.findByAccessLevelRole(AccessLevelTypeEnum.ROLE_SUPER_ADMIN)
+                    .orElseThrow(() -> new ExoPortalException(
+                            404,
+                            ExoErrorTypeEnum.TOAST,
+                            List.of(ExoErrorUtil.buildFieldError("role", ExoErrorKeyEnum.ROLE_NOT_FOUND))
+                    ));
 
-                UserRole userRole = UserRole.builder()
-                        .user(finalUser)
-                        .role(role)
-                        .isDefaultRole(true) // Set as default role if needed
-                        .build();
-                finalUser.setUserRoles(List.of(userRole));
-                return userRepository.save(finalUser);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+            UserRole userRole = UserRole.builder()
+                    .user(finalUser)
+                    .role(role)
+                    .isDefaultRole(true) // Set as default role if needed
+                    .build();
+            finalUser.setUserRoles(List.of(userRole));
+            return userRepository.save(finalUser);
         }
 
         return user;
