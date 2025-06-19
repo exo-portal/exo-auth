@@ -7,6 +7,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
 @Service
@@ -23,7 +24,8 @@ public class OtpServiceImpl implements OtpService {
     @Override
     @Transactional
     public void generateAndSendOtp(String email) {
-        String otp = String.valueOf((int) (Math.random() * 9000) + 1000); // Generate 4-digit OTP
+        SecureRandom secureRandom = new SecureRandom();
+        String otp = String.valueOf(secureRandom.nextInt(9000) + 1000); // Generate 4-digit OTP
         LocalDateTime expirationTime = LocalDateTime.now().plusMinutes(10); // Set expiration time
 
         otpRepository.deleteByEmail(email); // Remove any existing OTP for the email
