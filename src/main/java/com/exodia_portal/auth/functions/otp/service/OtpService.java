@@ -1,8 +1,5 @@
 package com.exodia_portal.auth.functions.otp.service;
 
-import org.springframework.stereotype.Service;
-
-@Service
 public interface OtpService {
 
     /**
