@@ -45,6 +45,7 @@ public class SecurityConfig {
             "/authentication/login",
             "/authentication/validate-email",
             "/forgot-password/verify-email",
+            "/forgot-password/verify-otp",
     };
 
     /**

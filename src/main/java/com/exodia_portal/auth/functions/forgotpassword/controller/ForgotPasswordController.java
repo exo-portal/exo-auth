@@ -28,4 +28,19 @@ public class ForgotPasswordController {
     public ApiResultModel verifyEmail(@RequestParam String email) {
         return forgotPasswordService.verifyEmail(email);
     }
+
+    /**
+     * Verifies the OTP code for the given email.
+     * <p>
+     * This endpoint checks if the provided OTP code is valid and not expired for the specified email address.
+     *
+     * @param email   the email address associated with the OTP
+     * @param otpCode the OTP code to verify
+     * @return ApiResultModel indicating success or failure of the verification
+     * @throws Exception if the OTP is invalid or expired
+     */
+    @GetMapping("/verify-otp")
+    public ApiResultModel verifyOtp(@RequestParam String email, @RequestParam String otpCode) throws Exception {
+        return forgotPasswordService.verifyOtp(email, otpCode);
+    }
 }

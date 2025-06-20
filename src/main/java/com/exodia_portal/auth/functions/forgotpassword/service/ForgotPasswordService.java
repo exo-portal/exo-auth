@@ -16,4 +16,15 @@ public interface ForgotPasswordService {
      * @return an ApiResultModel indicating whether the email is valid for password reset
      */
     ApiResultModel verifyEmail(String email);
+
+    /**
+     * Verifies the OTP code for the given email.
+     * If the OTP is valid and not expired, it returns a success message.
+     * If the OTP is invalid or expired, it throws an exception.
+     *
+     * @param email   the email address associated with the OTP
+     * @param otpCode the OTP code to verify
+     * @return ApiResultModel indicating success or failure of the verification
+     */
+    ApiResultModel verifyOtp(String email, String otpCode) throws Exception;
 }
