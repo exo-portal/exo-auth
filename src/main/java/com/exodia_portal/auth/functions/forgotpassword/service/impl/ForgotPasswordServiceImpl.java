@@ -49,4 +49,19 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
                 .message("Email verification successful")
                 .build();
     }
+
+    /**
+     * Verifies the OTP code for the given email.
+     * If the OTP is valid and not expired, it returns a success message.
+     * If the OTP is invalid or expired, it throws an exception.
+     *
+     * @param email   the email address associated with the OTP
+     * @param otpCode the OTP code to verify
+     * @return ApiResultModel indicating success or failure of the verification
+     * @throws Exception if the OTP is invalid or expired
+     */
+    @Override
+    public ApiResultModel verifyOtp(String email, String otpCode) throws Exception {
+        return otpService.verifyOtp(email, otpCode);
+    }
 }
