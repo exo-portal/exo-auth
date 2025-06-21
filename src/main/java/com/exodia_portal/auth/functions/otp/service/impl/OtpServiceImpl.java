@@ -63,7 +63,7 @@ public class OtpServiceImpl implements OtpService {
         Otp otp = otpRepository.findByEmailAndOtpCode(email, otpCode).orElseThrow(() -> new ExoPortalException(
                 HttpStatus.NOT_FOUND.value(),
                 ExoErrorTypeEnum.FIELD,
-                List.of(ExoErrorUtil.buildFieldError("pin", ExoErrorKeyEnum.INVALID_OTP_CODE))
+                List.of(ExoErrorUtil.buildFieldError("pin", ExoErrorKeyEnum.OTP_INVALID))
         ));
 
         if (ObjectUtils.isEmpty(otp)) {
