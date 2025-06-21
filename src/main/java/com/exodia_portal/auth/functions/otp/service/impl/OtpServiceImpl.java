@@ -59,6 +59,7 @@ public class OtpServiceImpl implements OtpService {
      * @throws Exception if the OTP is invalid or expired
      */
     @Override
+    @Transactional
     public ApiResultModel verifyOtp(String email, String otpCode) throws Exception {
         Otp otp = otpRepository.findByEmailAndOtpCode(email, otpCode).orElseThrow(() -> new ExoPortalException(
                 HttpStatus.NOT_FOUND.value(),
@@ -72,6 +73,8 @@ public class OtpServiceImpl implements OtpService {
                     .message("Invalid OTP code")
                     .build();
         }
+
+        otpRepository.deleteByEmail(email); // Remove any existing OTP for the email
 
         return ApiResultModel.builder()
                 .isSuccess(true)

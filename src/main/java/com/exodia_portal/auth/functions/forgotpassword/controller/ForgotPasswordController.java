@@ -30,6 +30,19 @@ public class ForgotPasswordController {
     }
 
     /**
+     * Resends the OTP to the provided email address.
+     * <p>
+     * This endpoint allows users to request a new OTP if they did not receive the original one.
+     *
+     * @param email the email address to which the OTP should be resent
+     * @return ApiResultModel indicating success or failure of the resend operation
+     */
+    @GetMapping("/resend-otp")
+    public ApiResultModel resendOtp(@RequestParam String email) {
+        return forgotPasswordService.resendOtp(email);
+    }
+
+    /**
      * Verifies the OTP code for the given email.
      * <p>
      * This endpoint checks if the provided OTP code is valid and not expired for the specified email address.
@@ -43,4 +56,6 @@ public class ForgotPasswordController {
     public ApiResultModel verifyOtp(@RequestParam String email, @RequestParam String otpCode) throws Exception {
         return forgotPasswordService.verifyOtp(email, otpCode);
     }
+
+
 }

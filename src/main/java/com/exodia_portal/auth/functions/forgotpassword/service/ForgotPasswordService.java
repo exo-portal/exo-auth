@@ -27,4 +27,12 @@ public interface ForgotPasswordService {
      * @return ApiResultModel indicating success or failure of the verification
      */
     ApiResultModel verifyOtp(String email, String otpCode) throws Exception;
+
+    /**
+     * Resends the OTP to the provided email address.
+     *
+     * @param email the email address to which the OTP should be resent
+     * @return ApiResultModel indicating success or failure of the resend operation
+     */
+    ApiResultModel resendOtp(String email);
 }

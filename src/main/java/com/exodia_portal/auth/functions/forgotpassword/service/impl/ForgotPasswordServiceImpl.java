@@ -64,4 +64,23 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
     public ApiResultModel verifyOtp(String email, String otpCode) throws Exception {
         return otpService.verifyOtp(email, otpCode);
     }
+
+    /**
+     * Resends the OTP to the provided email address.
+     * <p>
+     * This method generates a new OTP and sends it to the specified email address.
+     *
+     * @param email the email address to which the OTP should be resent
+     * @return ApiResultModel indicating success of the operation
+     */
+    @Override
+    public ApiResultModel resendOtp(String email) {
+        otpService.generateAndSendOtp(email);
+
+        return ApiResultModel.builder()
+                .isSuccess(true)
+                .message("Email verification successful")
+                .build();
+    }
+
 }
