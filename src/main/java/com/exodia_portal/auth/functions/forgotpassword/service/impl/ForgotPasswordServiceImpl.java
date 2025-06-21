@@ -79,7 +79,7 @@ public class ForgotPasswordServiceImpl implements ForgotPasswordService {
 
         return ApiResultModel.builder()
                 .isSuccess(true)
-                .message("Email verification successful")
+                .message("OTP has been resent to your email")
                 .build();
     }
 
