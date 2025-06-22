@@ -1,5 +1,6 @@
 package com.exodia_portal.auth.functions.forgotpassword.service;
 
+import com.exodia_portal.auth.functions.forgotpassword.dto.UpdatePasswordRequestDto;
 import com.exodia_portal.common.dto.ApiResultModel;
 import org.springframework.stereotype.Service;
 
@@ -35,4 +36,14 @@ public interface ForgotPasswordService {
      * @return ApiResultModel indicating success or failure of the resend operation
      */
     ApiResultModel resendOtp(String email);
+
+    /**
+     * Resets the password for the user.
+     * <p>
+     * This method updates the user's password based on the provided request data.
+     *
+     * @param request the request containing the new password and other necessary information
+     * @return ApiResultModel indicating success or failure of the password reset operation
+     */
+    ApiResultModel resetPassword(UpdatePasswordRequestDto request);
 }
