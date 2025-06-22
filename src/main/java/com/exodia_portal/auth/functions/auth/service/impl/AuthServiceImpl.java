@@ -67,6 +67,17 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private RoleRepository roleRepository;
 
+    /**
+     * Verifies the user's session by checking the JWT token in the request cookies.
+     * <p>
+     * This method retrieves the JWT token from the request cookies, parses it to extract user details,
+     * and checks if the user exists in the database. If the token is valid and the user is found,
+     * it returns an ApiResultModel with user details. If the token is invalid or expired, it throws
+     * an ExoPortalException with an appropriate error message.
+     *
+     * @param request the HttpServletRequest containing cookies with JWT token
+     * @return an ApiResultModel containing user details if session is valid
+     */
     @Override
     public ApiResultModel verifySession(HttpServletRequest request) {
         String jwt = null;

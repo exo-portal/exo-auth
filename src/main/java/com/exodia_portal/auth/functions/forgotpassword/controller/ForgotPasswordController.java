@@ -1,9 +1,12 @@
 package com.exodia_portal.auth.functions.forgotpassword.controller;
 
+import com.exodia_portal.auth.functions.forgotpassword.dto.UpdatePasswordRequestDto;
 import com.exodia_portal.auth.functions.forgotpassword.service.ForgotPasswordService;
 import com.exodia_portal.common.dto.ApiResultModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,6 +58,19 @@ public class ForgotPasswordController {
     @GetMapping("/verify-otp")
     public ApiResultModel verifyOtp(@RequestParam String email, @RequestParam String otpCode) throws Exception {
         return forgotPasswordService.verifyOtp(email, otpCode);
+    }
+
+    /**
+     * Resets the password for the user.
+     * <p>
+     * This endpoint allows users to reset their password using a valid OTP and a new password.
+     *
+     * @param requestDto contains the email, OTP code, and new password
+     * @return ApiResultModel indicating success or failure of the password reset operation
+     */
+    @PutMapping("/reset-password")
+    public ApiResultModel resetPassword(@RequestBody UpdatePasswordRequestDto requestDto) {
+        return forgotPasswordService.resetPassword(requestDto);
     }
 
 
