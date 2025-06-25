@@ -8,9 +8,13 @@ import java.util.List;
 
 @Builder
 public record LoginResponseDto(
+
         UserResponseDto user,
+
         List<String> featureKeys,
+
         List<String> roleNames,
+
         AccessLevelTypeEnum accessLevelRole) {
 
 }

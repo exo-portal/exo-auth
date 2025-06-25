@@ -16,6 +16,10 @@ public class UserHelper {
         UserResponseDto response = new UserResponseDto();
         BeanUtils.copyProperties(user, response);
 
+        response.setAvatarUrl(user.getUserInfo().getAvatarUrl());
+        response.setMobileNumber(user.getUserInfo().getPhoneNumber());
+        response.setFullName(user.getUserInfo().getFullName());
+
         if (user.getLoginMethods() != null && !user.getLoginMethods().isEmpty()) {
             user.getLoginMethods()
                     .forEach(loginMethod -> {
