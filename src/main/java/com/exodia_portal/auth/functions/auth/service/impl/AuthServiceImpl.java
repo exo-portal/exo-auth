@@ -21,6 +21,7 @@ import com.exodia_portal.common.model.UserRole;
 import com.exodia_portal.common.repository.RoleRepository;
 import com.exodia_portal.common.utils.ExoErrorUtil;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -317,9 +318,9 @@ public class AuthServiceImpl implements AuthService {
      * has the requested role. If valid, it generates new tokens with the selected role and updates
      * the security context. If the role is not allowed or does not exist, it throws an exception.
      *
-     * @param newRole   the new role to switch to
-     * @param request   the HttpServletRequest containing cookies with JWT token
-     * @param response  the HttpServletResponse used to set cookies or headers
+     * @param newRole  the new role to switch to
+     * @param request  the HttpServletRequest containing cookies with JWT token
+     * @param response the HttpServletResponse used to set cookies or headers
      * @return an ApiResultModel containing the updated user details and tokens
      */
     @Override
@@ -366,7 +367,7 @@ public class AuthServiceImpl implements AuthService {
             // Fetch the user from the database
             User user = userRepository.findByIdAndIsDeletedFalse(Long.parseLong(userId))
                     .orElseThrow(() -> new ExoPortalException(
-                            HttpStatus.NOT_FOUND.value(), 
+                            HttpStatus.NOT_FOUND.value(),
                             ExoErrorTypeEnum.MODAL,
                             List.of(ExoErrorUtil.buildFieldError("user", ExoErrorKeyEnum.USER_NOT_FOUND))
                     ));
@@ -421,11 +422,19 @@ public class AuthServiceImpl implements AuthService {
                     .message("Role switched successfully")
                     .resultData(loginResponseDto)
                     .build();
-        } catch (Exception e) {
+        } catch (JwtException e) {
             throw new ExoPortalException(
                     HttpStatus.UNAUTHORIZED.value(),
                     ExoErrorTypeEnum.MODAL,
                     List.of(ExoErrorUtil.buildFieldError("token", ExoErrorKeyEnum.INVALID_OR_EXPIRED_TOKEN))
+            );
+        } catch (ExoPortalException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ExoPortalException(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    ExoErrorTypeEnum.MODAL,
+                    List.of(ExoErrorUtil.buildFieldError("unexpected", ExoErrorKeyEnum.UNEXPECTED_ERROR))
             );
         }
     }
