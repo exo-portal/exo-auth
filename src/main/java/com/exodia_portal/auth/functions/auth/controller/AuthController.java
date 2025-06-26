@@ -107,6 +107,23 @@ public class AuthController {
     }
 
     /**
+     * Switches the user's role based on the provided role in the request body.
+     * <p>
+     * This endpoint allows users to switch their roles by providing a role in the request body.
+     * It returns an ApiResultModel indicating the result of the role switch operation.
+     *
+     * @param requestBody the request body containing the role to switch to
+     * @param request     the HttpServletRequest object
+     * @param response    the HttpServletResponse object
+     * @return an ApiResultModel indicating the result of the role switch operation
+     */
+    @PostMapping("/switch-role")
+    public ApiResultModel switchRole(@RequestBody Map<String, String> requestBody, HttpServletRequest request, HttpServletResponse response) {
+        String role = requestBody.get("role");
+        return authService.switchRole(role, request, response);
+    }
+
+    /**
      * Refreshes the access token using the refresh token.
      *
      * @param request the request body containing the refresh token

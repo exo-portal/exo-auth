@@ -70,4 +70,18 @@ public interface AuthService {
      */
     ApiResultModel register(RegisterRequestDto request, HttpServletResponse response);
 
+    /**
+     * Switches the user's role based on the provided role name.
+     * <p>
+     * This method allows a user to change their role, which may affect their permissions
+     * and access within the application. The role is specified as a string, and the method
+     * handles the logic for updating the user's role in the system.
+     *
+     * @param role     the name of the role to switch to
+     * @param request  the HttpServletRequest object containing session details
+     * @param response the HttpServletResponse object used to set cookies or headers
+     * @return an ApiResultModel indicating the result of the role switch operation
+     */
+    ApiResultModel switchRole(String role, HttpServletRequest request, HttpServletResponse response);
+
 }
