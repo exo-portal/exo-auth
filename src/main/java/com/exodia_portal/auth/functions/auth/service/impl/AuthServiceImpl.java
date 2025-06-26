@@ -311,6 +311,126 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
+     * Switches the user's role based on the provided new role.
+     * <p>
+     * This method extracts the current JWT from cookies, validates it, and checks if the user
+     * has the requested role. If valid, it generates new tokens with the selected role and updates
+     * the security context. If the role is not allowed or does not exist, it throws an exception.
+     *
+     * @param newRole   the new role to switch to
+     * @param request   the HttpServletRequest containing cookies with JWT token
+     * @param response  the HttpServletResponse used to set cookies or headers
+     * @return an ApiResultModel containing the updated user details and tokens
+     */
+    @Override
+    public ApiResultModel switchRole(String newRole, HttpServletRequest request, HttpServletResponse response) {
+        // Extract the current JWT from cookies
+        String jwt = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if (ExoConstant.EXO_TOKEN_NAME.equals(cookie.getName())) {
+                    jwt = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        if (jwt == null) {
+            throw new ExoPortalException(
+                    401,
+                    ExoErrorTypeEnum.MODAL,
+                    List.of(ExoErrorUtil.buildFieldError("token", ExoErrorKeyEnum.INVALID_OR_EXPIRED_TOKEN))
+            );
+        }
+
+        try {
+            // Parse the JWT to extract user details
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(secretKey.getBytes())
+                    .build()
+                    .parseClaimsJws(jwt)
+                    .getBody();
+
+            String userId = claims.getSubject();
+            List<String> roles = (List<String>) claims.get("roles", List.class);
+
+            // Check if the requested role is valid and allowed
+            if (!roles.contains(newRole)) {
+                throw new ExoPortalException(
+                        403,
+                        ExoErrorTypeEnum.MODAL,
+                        List.of(ExoErrorUtil.buildFieldError("role", ExoErrorKeyEnum.ROLE_NOT_ALLOWED))
+                );
+            }
+
+            // Fetch the user from the database
+            User user = userRepository.findByIdAndIsDeletedFalse(Long.parseLong(userId))
+                    .orElseThrow(() -> new ExoPortalException(
+                            HttpStatus.NOT_FOUND.value(), 
+                            ExoErrorTypeEnum.MODAL,
+                            List.of(ExoErrorUtil.buildFieldError("user", ExoErrorKeyEnum.USER_NOT_FOUND))
+                    ));
+
+            // Check if the new role exists in the user's UserRole roles
+            boolean roleExists = user.getUserRoles().stream()
+                    .anyMatch(userRole -> userRole.getRole().getAccessLevelRole().name().equals(newRole));
+
+            if (!roleExists) {
+                throw new ExoPortalException(
+                        HttpStatus.FORBIDDEN.value(),
+                        ExoErrorTypeEnum.MODAL,
+                        List.of(ExoErrorUtil.buildFieldError("role", ExoErrorKeyEnum.ROLE_NOT_EXIST))
+                );
+            }
+
+            // Generate new tokens with the selected role
+            AccessLevelTypeEnum accessLevelRole = AccessLevelTypeEnum.valueOf(newRole);
+            List<String> featureKeys = user.getDefaultRoleFeatureKeys(); // Adjust if role-specific features are needed
+
+            String accessToken = jwtService.generateTokenWithRolesAndFeatures(
+                    String.valueOf(user.getId()),
+                    accessLevelRole,
+                    roles,
+                    featureKeys,
+                    accessTokenExpiration);
+
+            String refreshToken = jwtService.generateTokenWithRolesAndFeatures(
+                    String.valueOf(user.getId()),
+                    accessLevelRole,
+                    roles,
+                    featureKeys,
+                    refreshTokenExpiration);
+
+            // Set the new tokens in cookies
+            SetCookie(accessToken, refreshToken, response);
+
+            // Update the security context
+            Authentication authentication = new JwtAuthenticationToken(user.getId(), accessLevelRole, null);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // Build the response
+            LoginResponseDto loginResponseDto = LoginResponseDto.builder()
+                    .user(UserHelper.response(user))
+                    .featureKeys(featureKeys)
+                    .roleNames(roles)
+                    .accessLevelRole(accessLevelRole)
+                    .build();
+
+            return ApiResultModel.builder()
+                    .isSuccess(true)
+                    .message("Role switched successfully")
+                    .resultData(loginResponseDto)
+                    .build();
+        } catch (Exception e) {
+            throw new ExoPortalException(
+                    HttpStatus.UNAUTHORIZED.value(),
+                    ExoErrorTypeEnum.MODAL,
+                    List.of(ExoErrorUtil.buildFieldError("token", ExoErrorKeyEnum.INVALID_OR_EXPIRED_TOKEN))
+            );
+        }
+    }
+
+    /**
      * Generates access and refresh tokens for a user and sets them in the response.
      * <p>
      * This method retrieves the user's default access level role, feature keys, and role names.
