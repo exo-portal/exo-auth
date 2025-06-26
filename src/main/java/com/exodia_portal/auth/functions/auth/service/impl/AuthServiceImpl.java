@@ -325,6 +325,15 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     public ApiResultModel switchRole(String newRole, HttpServletRequest request, HttpServletResponse response) {
+        // Validate the new role
+        if (newRole == null || newRole.trim().isEmpty()) {
+            throw new ExoPortalException(
+                    400,
+                    ExoErrorTypeEnum.TOAST,
+                    List.of(ExoErrorUtil.buildFieldError("newRole", ExoErrorKeyEnum.INVALID_ROLE))
+            );
+        }
+
         // Extract the current JWT from cookies
         String jwt = null;
         if (request.getCookies() != null) {
@@ -336,6 +345,7 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
+        // If JWT is not found, throw an exception
         if (jwt == null) {
             throw new ExoPortalException(
                     401,
