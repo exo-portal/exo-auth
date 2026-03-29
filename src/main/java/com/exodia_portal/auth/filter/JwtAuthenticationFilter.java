@@ -35,7 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String servletPath = request.getServletPath();
         boolean isPublicEndpoint = Arrays.stream(SecurityConfig.PUBLIC_ENDPOINTS)
                 .anyMatch(endpoint -> new AntPathMatcher().match(endpoint, servletPath));
-        logger.debug("Servlet Path: {}, Is Public Endpoint: {}", servletPath, isPublicEndpoint);
+        logger.info("Servlet path: {}, Is Public Endpoint: {}", servletPath, isPublicEndpoint);
         return isPublicEndpoint;
     }
     /**
@@ -76,8 +76,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                return;
+                SecurityContextHolder.clearContext();
             }
         }
 

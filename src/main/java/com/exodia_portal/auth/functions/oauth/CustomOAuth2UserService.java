@@ -30,8 +30,10 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class CustomOAuth2UserService implements OAuth2UserService {
@@ -233,7 +235,7 @@ public class CustomOAuth2UserService implements OAuth2UserService {
                     .role(role)
                     .isDefaultRole(true) // Set as default role if needed
                     .build();
-            finalUser.setUserRoles(List.of(userRole));
+            finalUser.setUserRoles(new HashSet<>(Set.of(userRole)));
             return userRepository.save(finalUser);
         }
 

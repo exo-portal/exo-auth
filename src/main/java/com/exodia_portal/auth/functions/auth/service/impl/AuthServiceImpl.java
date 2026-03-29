@@ -36,7 +36,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.exodia_portal.common.constant.ExoConstant.EXO_JSESSION_ID;
 import static com.exodia_portal.common.constant.ExoConstant.EXO_REFRESH_TOKEN_NAME;
@@ -301,7 +303,7 @@ public class AuthServiceImpl implements AuthService {
         user.setUserInfo(userInfo);
 
         if (user.getUserRoles() == null || user.getUserRoles().isEmpty()) {
-            user.setUserRoles(List.of(userRole));
+            user.setUserRoles(new HashSet<>(Set.of(userRole)));
         } else {
             user.getUserRoles().add(userRole);
         }
